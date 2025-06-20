@@ -1,0 +1,42 @@
+# Xcode
+.DS_Store
+*.xcuserstate
+*.xcuserdatad
+*.xcbkptlist
+*.xcscmblueprint
+**/xcshareddata/WorkspaceSettings.xcsettings
+**/xcshareddata/IDEWorkspaceChecks.plist
+
+# Build
+build/
+DerivedData/
+*.ipa
+*.framework
+*.xcodeproj/xcuserdata/
+*.xcodeproj/project.xcworkspace/xcuserdata/
+
+# CocoaPods
+Pods/
+Podfile.lock
+
+# Swift Package Manager
+.swiftpm/
+.xcodebuild/
+.checkouts/
+
+# Fastlane
+fastlane/report.xml
+fastlane/Preview.html
+fastlane/screenshots
+fastlane/test_output
+
+# AppCode
+.idea/
+
+# OS
+.DS_Store
+
+# Local development files
+*.orig
+*.swp
+*~
