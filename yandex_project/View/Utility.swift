@@ -37,25 +37,11 @@ enum Utility {
             .year(.defaultDigits)
     }
 
-    enum Strings {
-        static let total = "Всего"
-        static let operations = "ОПЕРАЦИИ"
-        static let history = "Моя история"
-        static let todayIncome = "Доходы сегодня"
-        static let todayOutcome = "Расходы сегодня"
-        static let start = "Начало"
-        static let end = "Конец"
-        static let sum = "Сумма"
-        static let sort = "Сортировка"
-        static let sortByDate = "По дате"
-        static let sortByAmount = "По сумме"
-        static let back = "Назад"
-    }
-
     enum Colors {
         static let accent = Color(red: 108/255, green: 94/255, blue: 177/255)
         static let background = Color(.systemGray6)
         static let iconBackground = Color.green.opacity(0.2)
+        static let currencyBackground = Color(red: 230/255, green: 255/255, blue: 230/255)
     }
     enum Icons {
         static let history = "clock"
