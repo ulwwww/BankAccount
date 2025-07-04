@@ -5,26 +5,34 @@
 //  Created by ulwww on 18.06.25.
 //
 import SwiftUI
-import Fuse
 
 struct ArticlesView: View {
     private let service = TransactionsService()
     @State private var categories: [Category] = []
     @State private var emojiMap: [Int: String] = [:]
     @State private var searchText: String = ""
-    private let fuse = Fuse()
-    
+
+    private func partOfWord(_ query: String, _ text: String) -> Bool {
+        var idx = text.lowercased().startIndex
+        for c in query.lowercased() {
+            guard let found = text.lowercased()[idx...].firstIndex(of: c) else {
+                return false
+            }
+            idx = text.lowercased().index(after: found)
+        }
+        return true
+    }
+
     private var fuzzySearch: [Category] {
-        let query = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
+        let maxFuzzy = 2
+        let query = searchText
+            .lowercased()
+            .trimmingCharacters(in: .whitespacesAndNewlines)
         guard !query.isEmpty else {
             return categories
         }
-        let maxFuzzyScore: Double = 0.3
-        return categories.compactMap { category in
-            if let result = fuse.search(query, in: category.name), result.score <= maxFuzzyScore {
-                return category
-            }
-            return nil
+        return categories.filter { c in
+            return partOfWord(query, c.name.lowercased()) || levenshtein(query, c.name.lowercased()) <= maxFuzzy
         }
     }
 
@@ -36,7 +44,9 @@ struct ArticlesView: View {
             }
             .navigationTitle("Мои статьи")
             .navigationBarBackButtonHidden(true)
-            .searchable(text: $searchText, placement: .navigationBarDrawer(displayMode: .always), prompt: "Search")
+            .searchable(text: $searchText,
+                        placement: .navigationBarDrawer(displayMode: .always),
+                        prompt: "Search")
         }
         .task {
             loadData()
@@ -57,8 +67,7 @@ struct ArticlesView: View {
             ForEach(fuzzySearch, id: \.id) { category in
                 rowView(for: category)
                 if category.id != fuzzySearch.last?.id {
-                    Divider()
-                        .padding(.leading, 35)
+                    Divider().padding(.leading, 35)
                 }
             }
         }
@@ -91,6 +100,29 @@ struct ArticlesView: View {
         emojiMap = Dictionary(uniqueKeysWithValues: c.map { ($0.id, String($0.emoji)) })
         categories = c
     }
+    
+    private func levenshtein(_ s: String, _ t: String) -> Int {
+        let s1 = Array(s.lowercased())
+        let s2 = Array(t.lowercased())
+        let m = s1.count, n = s2.count
+        var dp = Array(repeating: Array(repeating: 0, count: n+1), count: m+1)
+        for i in 0...m {
+            dp[i][0] = i
+        }
+        for j in 0...n {
+            dp[0][j] = j
+        }
+        for i in 1...m {
+            for j in 1...n {
+                if s1[i-1] == s2[j-1] {
+                    dp[i][j] = dp[i-1][j-1]
+                } else {
+                    dp[i][j] = min(dp[i-1][j]+1, dp[i][j-1]+1, dp[i-1][j-1]+1)
+                }
+            }
+        }
+        return dp[m][n]
+    }
 }
 
 struct Previews: PreviewProvider {
@@ -98,3 +130,4 @@ struct Previews: PreviewProvider {
         ArticlesView()
     }
 }
+
