@@ -22,11 +22,15 @@ final class TransactionsListViewModel: ObservableObject {
 
     private var computedBalanceFull: Decimal {
         let incomeSum = allTransactions
-            .filter { incomeMap[$0.categoryId] == true }
+            .filter {
+                incomeMap[$0.categoryId] == true
+            }
             .map(\.amount)
             .reduce(0, +)
         let outcomeSum = allTransactions
-            .filter { incomeMap[$0.categoryId] == false }
+            .filter {
+                incomeMap[$0.categoryId] == false
+            }
             .map(\.amount)
             .reduce(0, +)
         return incomeSum - outcomeSum
@@ -49,9 +53,8 @@ final class TransactionsListViewModel: ObservableObject {
         emojiMap  = Dictionary(uniqueKeysWithValues: cats.map { ($0.id, String($0.emoji)) })
         incomeMap = Dictionary(uniqueKeysWithValues: cats.map { ($0.id, $0.isIncome == .income) })
 
-        let startOfDay     = calendar.startOfDay(for: Date())
+        let startOfDay = calendar.startOfDay(for: Date())
         guard let tomorrow = calendar.date(byAdding: .day, value: 1, to: startOfDay) else { return }
-
         do {
             allTransactions = try await service.takeTransaction(from: startOfDay, to: tomorrow)
             recalcDisplayedBalance()

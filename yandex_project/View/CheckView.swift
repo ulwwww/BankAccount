@@ -7,16 +7,15 @@
 import SwiftUI
 import UIKit
 struct CheckView: View {
-    @ObservedObject var vm: TransactionsListViewModel
+    @StateObject var vm: TransactionsListViewModel
     @FocusState private var isBalanceFlag: Bool
-
     @State private var isEditing: Bool = false
     @State private var draftBalance: String
     @State private var flagViewCurrency: Bool = false
     @State private var hiddenBalance: Bool = false
 
     init(vm: TransactionsListViewModel) {
-        self.vm = vm
+        _vm = StateObject(wrappedValue: vm)
         _draftBalance = State(initialValue: vm.displayedBalance.description)
     }
 
@@ -30,7 +29,22 @@ struct CheckView: View {
                 .allowsHitTesting(false)
             }
         }
+        .background(Utility.Colors.background.ignoresSafeArea())
     }
+    
+    @ViewBuilder
+    private func currencySelectionDialog() -> some View {
+        ForEach(CurrencyData.allCases) { curr in
+            Button("\(curr.name) \(curr.symbol)") {
+                vm.currency = curr
+                draftBalance = vm.displayedBalance.description
+            }
+            .tint(Utility.Colors.accent)
+        }
+        Button("Отмена", role: .cancel) { }
+            .tint(Color.red)
+    }
+
 
     @ViewBuilder
     private var content: some View {
@@ -55,18 +69,8 @@ struct CheckView: View {
             }
         }
         .confirmationDialog("Валюта", isPresented: $flagViewCurrency, titleVisibility: .visible) {
-            ForEach(CurrencyData.allCases) { curr in
-                Button("\(curr.name) \(curr.symbol)") {
-                    vm.currency = curr
-                    draftBalance = vm.displayedBalance.description
-                }
-                .tint(Utility.Colors.accent)
-            }
-            Button("Отмена", role: .cancel) {
-            }
-            .tint(Color.red)
+            currencySelectionDialog()
         }
-        .background(Utility.Colors.background.ignoresSafeArea())
     }
 
     private var balanceCurrencySection: some View {
@@ -92,7 +96,7 @@ struct CheckView: View {
                         .spoiler(isOn: hiddenBalance)
                 }
             }
-            .padding(.vertical, 16).padding(.horizontal, 16)
+            .padding(.all, 16)
             .frame(maxWidth: .infinity)
             .background(isEditing ? Color.white : Color("Color"))
             .cornerRadius(12)
