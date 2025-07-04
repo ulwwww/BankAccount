@@ -6,6 +6,10 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		2CF37B7E2E18089F00419FE4 /* Fuse in Frameworks */ = {isa = PBXBuildFile; productRef = 2CF37B7D2E18089F00419FE4 /* Fuse */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXContainerItemProxy section */
 		2C4DF0A62DFB8B8300A21E92 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -97,6 +101,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				2CF37B7E2E18089F00419FE4 /* Fuse in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -109,6 +114,7 @@
 				2CEFAD2D2DF71FD7009BD3D5 /* yandex_project */,
 				2CEFAD2C2DF71FD7009BD3D5 /* Products */,
 				2C4DF0C72DFB8E2400A21E92 /* yandex_projectTest */,
+				2CF37B7C2E18089800419FE4 /* Frameworks */,
 			);
 			sourceTree = "<group>";
 		};
@@ -121,6 +127,13 @@
 				2C4DF0D12DFB934200A21E92 /* yandex_projectTesting.xctest */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		2CF37B7C2E18089800419FE4 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = Frameworks;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -204,6 +217,7 @@
 			);
 			name = yandex_project;
 			packageProductDependencies = (
+				2CF37B7D2E18089F00419FE4 /* Fuse */,
 			);
 			productName = yandex_project;
 			productReference = 2CEFAD2B2DF71FD7009BD3D5 /* yandex_project.app */;
@@ -245,6 +259,9 @@
 			);
 			mainGroup = 2CEFAD222DF71FD7009BD3D5;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				2CF37B462E18063600419FE4 /* XCRemoteSwiftPackageReference "fuse-swift" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 2CEFAD2C2DF71FD7009BD3D5 /* Products */;
 			projectDirPath = "";
@@ -673,6 +690,25 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		2CF37B462E18063600419FE4 /* XCRemoteSwiftPackageReference "fuse-swift" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/krisk/fuse-swift";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 1.4.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		2CF37B7D2E18089F00419FE4 /* Fuse */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 2CF37B462E18063600419FE4 /* XCRemoteSwiftPackageReference "fuse-swift" */;
+			productName = Fuse;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 2CEFAD232DF71FD7009BD3D5 /* Project object */;
 }

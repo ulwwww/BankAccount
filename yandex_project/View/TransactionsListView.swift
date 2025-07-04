@@ -6,21 +6,6 @@
 //
 import SwiftUI
 
-private enum Constant {
-    static let leadingIndent: CGFloat = 35
-    static let cornerRadius: CGFloat = 12
-    static let shadowRadius: CGFloat = 4
-    static let iconSize: CGFloat = 25
-    static let buttonFrame: CGFloat = 44
-    static let addIconSize: CGFloat = 25
-    static let addButtonSize: CGFloat = 60
-    static let iconContainer: CGFloat = 30
-    static let iconSpacing: CGFloat = 12
-    static let textSpacing: CGFloat = 4
-    static let rowVertical: CGFloat = 12
-    static let sectionPadding: CGFloat = 16
-}
-
 enum DataError: Error {
     case invalidDate
 }
@@ -34,109 +19,112 @@ struct TransactionsListView: View {
     @State private var emojiMap: [Int: String] = [:]
 
     private var totalSum: Decimal {
-        transactions.map({ $0.amount }).reduce(0, +)
+        transactions.map { $0.amount }.reduce(0, +)
     }
 
     var body: some View {
-        ZStack {
-            content
-            addButton
-        }
-        .background(Utility.Colors.background)
-    }
+        NavigationStack {
+            ZStack {
+                VStack(alignment: .trailing) {
+                    NavigationLink(destination: MyStoryView(direction: direction)) {
+                        Image(systemName: Utility.Icons.history)
+                            .font(.system(size: 25, weight: .light))
+                            .foregroundColor(Utility.Colors.accent)
+                            .frame(width: 44, height: 44)
+                    }
+                    .clipShape(Circle())
+                    .padding(.horizontal, 16)
 
-    private var content: some View {
-        VStack(alignment: .trailing) {
-            historyLink
-            titleSection
-            totalSection
-            operationsList
-        }
-    }
+                    HStack {
+                        Text(direction.titleToday)
+                            .font(.largeTitle).bold()
+                        Spacer()
+                    }
+                    .padding(.horizontal, 16)
+                    .padding(.top, 16)
 
-    private var historyLink: some View {
-        NavigationLink(destination: MyStoryView(direction: direction)) {
-            Image(systemName: Utility.Icons.history)
-                .font(.system(size: Constant.iconSize, weight: .light))
-                .foregroundColor(Utility.Colors.accent)
-                .frame(width: Constant.buttonFrame, height: Constant.buttonFrame)
-        }
-        .clipShape(Circle())
-        .padding(.top, 0)
-        .padding(.horizontal, 16)
-    }
+                    HStack {
+                        Text("Всего")
+                        Spacer()
+                        Text(NSDecimalNumber(decimal: totalSum), formatter: Utility.currency)
+                    }
+                    .padding(16)
+                    .background(Color.white)
+                    .cornerRadius(12)
+                    .padding(.horizontal, 16)
 
-    private var titleSection: some View {
-        HStack {
-            Text(direction.titleToday)
-                .font(.largeTitle).bold()
-            Spacer()
-        }
-        .padding(.horizontal, 16)
-        .padding(.top, 16)
-    }
+                    ScrollView {
+                        Text("ОПЕРАЦИИ")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding(.leading, 35)
+                            .padding(.top, 16)
 
-    private var totalSection: some View {
-        HStack {
-            Text("Всего")
-            Spacer()
-            Text(NSDecimalNumber(decimal: totalSum), formatter: Utility.currency)
-        }
-        .padding(Constant.sectionPadding)
-        .background(Color.white)
-        .cornerRadius(Constant.cornerRadius)
-        .padding(.horizontal, 16)
-    }
+                        VStack(spacing: 0) {
+                            ForEach(transactions) { transaction in
+                                HStack(spacing: 12) {
+                                    ZStack {
+                                        Circle()
+                                            .fill(Utility.Colors.iconBackground)
+                                            .frame(width: 30, height: 30)
+                                        Text(emojiMap[transaction.categoryId] ?? "")
+                                            .font(.system(size: 20))
+                                    }
+                                    VStack(alignment: .leading, spacing: 4) {
+                                        Text(transaction.comment)
+                                            .font(.body)
+                                            .foregroundColor(.primary)
+                                            .lineLimit(1)
+                                    }
+                                    Spacer()
+                                    Text(NSDecimalNumber(decimal: transaction.amount), formatter: Utility.currency)
+                                        .font(.body)
+                                        .foregroundColor(.primary)
+                                    Image(systemName: Utility.Icons.chevron)
+                                        .foregroundColor(.secondary)
+                                }
+                                .padding(.horizontal)
+                                .padding(.vertical, 12)
 
-    private var operationsList: some View {
-        ScrollView {
-            Text("ОПЕРАЦИИ")
-                .font(.caption)
-                .foregroundColor(.secondary)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.leading, Constant.leadingIndent)
-                .padding(.top, 16)
+                                if transaction.id != transactions.last?.id {
+                                    Divider()
+                                        .padding(.leading, 35)
+                                }
+                            }
+                        }
+                        .background(Color(.systemBackground))
+                        .cornerRadius(12)
+                        .padding(.horizontal, 16)
+                        .padding(.bottom, 16)
+                    }
+                    .refreshable {
+                        try? await loadData()
+                    }
+                    .task(id: direction) {
+                        try? await loadData()
+                    }
+                }
 
-            VStack(spacing: 0) {
-                ForEach(transactions) { tx in
-                    TransactionRow(tx: tx, emoji: emojiMap[tx.categoryId] ?? "")
-                        .padding(.horizontal)
-                        .padding(.vertical, Constant.rowVertical)
-                    if tx.id != transactions.last?.id {
-                        Divider().padding(.leading, Constant.leadingIndent)
+                VStack {
+                    Spacer()
+                    HStack {
+                        Spacer()
+                        Button(action: {}) {
+                            Image(systemName: Utility.Icons.plus)
+                                .font(.system(size: 25, weight: .light))
+                                .foregroundColor(.white)
+                                .frame(width: 60, height: 60)
+                        }
+                        .background(Color("Color"))
+                        .clipShape(Circle())
+                        .shadow(radius: 4)
+                        .padding(.trailing, 16)
+                        .padding(.bottom, 16)
                     }
                 }
             }
-            .background(Color(.systemBackground))
-            .cornerRadius(Constant.cornerRadius)
-            .padding(.horizontal, 16)
-            .padding(.bottom, 16)
-        }
-        .refreshable {
-            try? await loadData()
-        }
-        .task(id: direction) {
-            try? await loadData()
-        }
-    }
-
-    private var addButton: some View {
-        VStack {
-            Spacer()
-            HStack {
-                Spacer()
-                Button(action: {}) {
-                    Image(systemName: Utility.Icons.plus)
-                        .font(.system(size: Constant.addIconSize, weight: .light))
-                        .foregroundColor(.white)
-                        .frame(width: Constant.addButtonSize, height: Constant.addButtonSize)
-                }
-                .background(Color("Color"))
-                .clipShape(Circle())
-                .shadow(radius: Constant.shadowRadius)
-                .padding(.trailing, 16)
-                .padding(.bottom, 16)
-            }
+            .background(Utility.Colors.background)
         }
     }
 
@@ -158,9 +146,7 @@ struct TransactionsListView: View {
             uniqueKeysWithValues: service.categories.map { ($0.id, $0.isIncome) }
         )
         transactions = all.filter { tx in
-            guard let isIncome = incomeMap[tx.categoryId] else {
-                return false
-            }
+            guard let isIncome = incomeMap[tx.categoryId] else { return false }
             return direction == .income ? isIncome == .income : isIncome == .outcome
         }
     }
@@ -171,15 +157,15 @@ private struct TransactionRow: View {
     let emoji: String
 
     var body: some View {
-        HStack(spacing: Constant.iconSpacing) {
+        HStack(spacing: 12) {
             ZStack {
                 Circle()
                     .fill(Utility.Colors.iconBackground)
-                    .frame(width: Constant.iconContainer, height: Constant.iconContainer)
+                    .frame(width: 30, height: 30)
                 Text(emoji)
                     .font(.system(size: 20))
             }
-            VStack(alignment: .leading, spacing: Constant.textSpacing) {
+            VStack(alignment: .leading, spacing: 4) {
                 Text(tx.comment)
                     .font(.body)
                     .foregroundColor(.primary)
@@ -198,7 +184,7 @@ private struct TransactionRow: View {
 extension Direction {
     var titleToday: String {
         switch self {
-        case .income:  return "Доходы сегодня"
+        case .income: return "Доходы сегодня"
         case .outcome: return "Расходы сегодня"
         }
     }
@@ -212,4 +198,3 @@ struct TransactionsListView_Previews: PreviewProvider {
         }
     }
 }
-

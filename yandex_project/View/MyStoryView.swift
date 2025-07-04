@@ -187,8 +187,12 @@ private struct OperationRow: View {
 struct MyStoryView_Previews: PreviewProvider {
     static var previews: some View {
         Group {
-            NavigationStack { MyStoryView(direction: .income) }
-            NavigationStack { MyStoryView(direction: .outcome) }
+            NavigationStack {
+                MyStoryView(direction: .income)
+            }
+            NavigationStack {
+                MyStoryView(direction: .outcome)
+            }
         }
     }
 }

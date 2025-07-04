@@ -18,32 +18,25 @@ struct MainTabView: View {
 
     var body: some View {
         TabView(selection: $selectedTab) {
-            NavigationView {
-                TransactionsListView(direction: .outcome)
-            }
-            .tabItem {
-                Image(systemName: "chart.line.downtrend.xyaxis")
-                Text("Расходы")
-            }
-            .tag(Tab.expenses)
-            NavigationView {
-                TransactionsListView(direction: .income)
-            }
-            .tabItem {
-                Image(systemName: "chart.line.uptrend.xyaxis")
-                Text("Доходы")
-            }
-            .tag(Tab.income)
-            NavigationView {
-                CheckView(vm: vm)
-                    .accentColor(Utility.Colors.accent)
-            }
-            .tabItem {
-                Image(systemName: "creditcard")
-                Text("Счет")
-            }
-            .tag(Tab.check)
-
+            TransactionsListView(direction: .outcome)
+                .tabItem {
+                    Image(systemName: "chart.line.downtrend.xyaxis")
+                    Text("Расходы")
+                }
+                .tag(Tab.expenses)
+            TransactionsListView(direction: .income)
+                .tabItem {
+                    Image(systemName: "chart.line.uptrend.xyaxis")
+                    Text("Доходы")
+                }
+                .tag(Tab.income)
+            CheckView(vm: vm)
+                .accentColor(Utility.Colors.accent)
+                .tabItem {
+                    Image(systemName: "creditcard")
+                    Text("Счет")
+                }
+                .tag(Tab.check)
             ArticlesView()
                 .tabItem {
                     Image(systemName: "line.horizontal.3")
