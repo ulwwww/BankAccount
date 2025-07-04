@@ -7,10 +7,7 @@
 import SwiftUI
 
 private enum Constant {
-    static let sectionSpacing: CGFloat = 16
-    static let horizontalPadding: CGFloat = 16
     static let leadingIndent: CGFloat = 35
-    static let topPadding: CGFloat = 0
     static let cornerRadius: CGFloat = 12
     static let shadowRadius: CGFloat = 4
     static let iconSize: CGFloat = 25
@@ -18,7 +15,6 @@ private enum Constant {
     static let addIconSize: CGFloat = 25
     static let addButtonSize: CGFloat = 60
     static let iconContainer: CGFloat = 30
-    static let emojiSize: CGFloat = 20
     static let iconSpacing: CGFloat = 12
     static let textSpacing: CGFloat = 4
     static let rowVertical: CGFloat = 12
@@ -66,8 +62,8 @@ struct TransactionsListView: View {
                 .frame(width: Constant.buttonFrame, height: Constant.buttonFrame)
         }
         .clipShape(Circle())
-        .padding(.top, Constant.topPadding)
-        .padding(.horizontal, Constant.horizontalPadding)
+        .padding(.top, 0)
+        .padding(.horizontal, 16)
     }
 
     private var titleSection: some View {
@@ -76,30 +72,30 @@ struct TransactionsListView: View {
                 .font(.largeTitle).bold()
             Spacer()
         }
-        .padding(.horizontal, Constant.horizontalPadding)
-        .padding(.top, Constant.sectionSpacing)
+        .padding(.horizontal, 16)
+        .padding(.top, 16)
     }
 
     private var totalSection: some View {
         HStack {
-            Text(Utility.Strings.total)
+            Text("Всего")
             Spacer()
             Text(NSDecimalNumber(decimal: totalSum), formatter: Utility.currency)
         }
         .padding(Constant.sectionPadding)
         .background(Color.white)
         .cornerRadius(Constant.cornerRadius)
-        .padding(.horizontal, Constant.horizontalPadding)
+        .padding(.horizontal, 16)
     }
 
     private var operationsList: some View {
         ScrollView {
-            Text(Utility.Strings.operations)
+            Text("ОПЕРАЦИИ")
                 .font(.caption)
                 .foregroundColor(.secondary)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.leading, Constant.leadingIndent)
-                .padding(.top, Constant.sectionSpacing)
+                .padding(.top, 16)
 
             VStack(spacing: 0) {
                 ForEach(transactions) { tx in
@@ -113,8 +109,8 @@ struct TransactionsListView: View {
             }
             .background(Color(.systemBackground))
             .cornerRadius(Constant.cornerRadius)
-            .padding(.horizontal, Constant.horizontalPadding)
-            .padding(.bottom, Constant.sectionSpacing)
+            .padding(.horizontal, 16)
+            .padding(.bottom, 16)
         }
         .refreshable {
             try? await loadData()
@@ -138,8 +134,8 @@ struct TransactionsListView: View {
                 .background(Color("Color"))
                 .clipShape(Circle())
                 .shadow(radius: Constant.shadowRadius)
-                .padding(.trailing, Constant.horizontalPadding)
-                .padding(.bottom, Constant.sectionSpacing)
+                .padding(.trailing, 16)
+                .padding(.bottom, 16)
             }
         }
     }
@@ -181,7 +177,7 @@ private struct TransactionRow: View {
                     .fill(Utility.Colors.iconBackground)
                     .frame(width: Constant.iconContainer, height: Constant.iconContainer)
                 Text(emoji)
-                    .font(.system(size: Constant.emojiSize))
+                    .font(.system(size: 20))
             }
             VStack(alignment: .leading, spacing: Constant.textSpacing) {
                 Text(tx.comment)

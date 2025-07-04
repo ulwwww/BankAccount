@@ -5,21 +5,15 @@ enum Tab: Hashable {
 }
 
 struct MainTabView: View {
+    @StateObject private var vm = TransactionsListViewModel()
     @State private var selectedTab: Tab = .expenses
 
     init() {
-        UITabBar.appearance().unselectedItemTintColor = UIColor.gray.withAlphaComponent(0.6)
         let app = UITabBarAppearance()
         app.configureWithOpaqueBackground()
         app.backgroundColor = .white
-        app.stackedLayoutAppearance.selected.iconColor = UIColor(named: "Color")
-        app.stackedLayoutAppearance.selected.titleTextAttributes = [.foregroundColor: UIColor(named: "Color")!]
-        app.stackedLayoutAppearance.normal.iconColor = UIColor.gray.withAlphaComponent(0.6)
-        app.stackedLayoutAppearance.normal.titleTextAttributes =  [.foregroundColor: UIColor.gray.withAlphaComponent(0.6)]
         UITabBar.appearance().standardAppearance = app
-        if #available(iOS 15.0, *) {
-            UITabBar.appearance().scrollEdgeAppearance = app
-        }
+        UITabBar.appearance().scrollEdgeAppearance = app
     }
 
     var body: some View {
@@ -40,12 +34,15 @@ struct MainTabView: View {
                 Text("Доходы")
             }
             .tag(Tab.income)
-            CheckView()
-                .tabItem {
-                    Image(systemName: "creditcard")
-                    Text("Счет")
-                }
-                .tag(Tab.check)
+            NavigationView {
+                CheckView(vm: vm)
+                    .accentColor(Utility.Colors.accent)
+            }
+            .tabItem {
+                Image(systemName: "creditcard")
+                Text("Счет")
+            }
+            .tag(Tab.check)
 
             ArticlesView()
                 .tabItem {
@@ -61,6 +58,8 @@ struct MainTabView: View {
                 }
                 .tag(Tab.settings)
         }
+        .accentColor(Color("Color"))
+        .toolbarBackground(Color.white, for: .tabBar)
     }
 }
 
