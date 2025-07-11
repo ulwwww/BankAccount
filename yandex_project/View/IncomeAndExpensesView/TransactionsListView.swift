@@ -17,6 +17,9 @@ struct TransactionsListView: View {
     private let calendar = Calendar.current
     @State private var transactions: [Transaction] = []
     @State private var emojiMap: [Int: String] = [:]
+    @State private var categoryMap: [Int: String] = [:]
+    @State private var isPresentingNew = false
+    @State private var editingTx: Transaction?
 
     private var totalSum: Decimal {
         transactions.map { $0.amount }.reduce(0, +)
@@ -63,29 +66,19 @@ struct TransactionsListView: View {
 
                         VStack(spacing: 0) {
                             ForEach(transactions) { transaction in
-                                HStack(spacing: 12) {
-                                    ZStack {
-                                        Circle()
-                                            .fill(Utility.Colors.iconBackground)
-                                            .frame(width: 30, height: 30)
-                                        Text(emojiMap[transaction.categoryId] ?? "")
-                                            .font(.system(size: 20))
-                                    }
-                                    VStack(alignment: .leading, spacing: 4) {
-                                        Text(transaction.comment)
-                                            .font(.body)
-                                            .foregroundColor(.primary)
-                                            .lineLimit(1)
-                                    }
-                                    Spacer()
-                                    Text(NSDecimalNumber(decimal: transaction.amount), formatter: Utility.currency)
-                                        .font(.body)
-                                        .foregroundColor(.primary)
-                                    Image(systemName: Utility.Icons.chevron)
-                                        .foregroundColor(.secondary)
+                                Button {
+                                    editingTx = transaction
+                                } label: {
+                                    TransactionRow(
+                                        categoryName: categoryMap[transaction.categoryId] ?? "",
+                                        comment: transaction.comment,
+                                        amount: transaction.amount,
+                                        emoji: emojiMap[transaction.categoryId] ?? ""
+                                    )
+                                    .padding(.vertical, 12)
+                                    .padding(.horizontal)
                                 }
-                                .padding(.horizontal)
-                                .padding(.vertical, 12)
+                                .buttonStyle(.plain)
 
                                 if transaction.id != transactions.last?.id {
                                     Divider()
@@ -110,7 +103,9 @@ struct TransactionsListView: View {
                     Spacer()
                     HStack {
                         Spacer()
-                        Button(action: {}) {
+                        Button {
+                            isPresentingNew = true
+                        } label: {
                             Image(systemName: Utility.Icons.plus)
                                 .font(.system(size: 25, weight: .light))
                                 .foregroundColor(.white)
@@ -125,6 +120,31 @@ struct TransactionsListView: View {
                 }
             }
             .background(Utility.Colors.background)
+            .fullScreenCover(isPresented: $isPresentingNew) {
+                EditingOperationView(
+                    direction: direction,
+                    onSave: { newTx in
+                        transactions.append(newTx)
+                    },
+                    onDelete: {}
+                )
+                .ignoresSafeArea()
+            }
+            .fullScreenCover(item: $editingTx) { tx in
+                EditingOperationView(
+                    direction: direction,
+                    transaction: tx,
+                    onSave: { updatedTx in
+                        if let index = transactions.firstIndex(where: { $0.id == updatedTx.id }) {
+                            transactions[index] = updatedTx
+                        }
+                    },
+                    onDelete: {
+                        transactions.removeAll { $0.id == tx.id }
+                    }
+                )
+                .ignoresSafeArea()
+            }
         }
     }
 
@@ -134,17 +154,16 @@ struct TransactionsListView: View {
         isLoading = true
         defer { isLoading = false }
 
-        emojiMap = Dictionary(
-            uniqueKeysWithValues: service.categories.map { ($0.id, String($0.emoji)) }
-        )
+        let cats = service.categories
+        emojiMap = Dictionary(uniqueKeysWithValues: cats.map { ($0.id, String($0.emoji)) })
+        categoryMap = Dictionary(uniqueKeysWithValues: cats.map { ($0.id, $0.name) })
+
         let startOfDay = calendar.startOfDay(for: Date())
         guard let startOfTomorrow = calendar.date(byAdding: .day, value: 1, to: startOfDay) else {
             throw DataError.invalidDate
         }
         let all = try await service.takeTransaction(from: startOfDay, to: startOfTomorrow)
-        let incomeMap = Dictionary(
-            uniqueKeysWithValues: service.categories.map { ($0.id, $0.isIncome) }
-        )
+        let incomeMap = Dictionary(uniqueKeysWithValues: cats.map { ($0.id, $0.isIncome) })
         transactions = all.filter { tx in
             guard let isIncome = incomeMap[tx.categoryId] else { return false }
             return direction == .income ? isIncome == .income : isIncome == .outcome
@@ -153,7 +172,9 @@ struct TransactionsListView: View {
 }
 
 private struct TransactionRow: View {
-    let tx: Transaction
+    let categoryName: String
+    let comment: String
+    let amount: Decimal
     let emoji: String
 
     var body: some View {
@@ -165,14 +186,20 @@ private struct TransactionRow: View {
                 Text(emoji)
                     .font(.system(size: 20))
             }
-            VStack(alignment: .leading, spacing: 4) {
-                Text(tx.comment)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(categoryName)
                     .font(.body)
                     .foregroundColor(.primary)
                     .lineLimit(1)
+                if !comment.isEmpty {
+                    Text(comment)
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                        .lineLimit(1)
+                }
             }
             Spacer()
-            Text(NSDecimalNumber(decimal: tx.amount), formatter: Utility.currency)
+            Text(NSDecimalNumber(decimal: amount), formatter: Utility.currency)
                 .font(.body)
                 .foregroundColor(.primary)
             Image(systemName: Utility.Icons.chevron)
