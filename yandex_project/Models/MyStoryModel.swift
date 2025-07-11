@@ -25,7 +25,7 @@ final class MyStoryViewModel: ObservableObject {
         }
     }
 
-    private let direction: Direction
+    let direction: Direction
     private let service = TransactionsService()
     private let calendar: Calendar
 
@@ -93,6 +93,12 @@ final class MyStoryViewModel: ObservableObject {
         let eStart = calendar.startOfDay(for: end)
         let e = calendar.date(byAdding: DateComponents(hour: 23, minute: 59, second: 59), to: eStart)!
         return (s, e)
+    }
+    func percentage(for tx: Transaction) -> Double {
+        let total = NSDecimalNumber(decimal: totalSum).doubleValue
+        guard total > 0 else { return 0 }
+        let value = NSDecimalNumber(decimal: tx.amount).doubleValue
+        return value / total
     }
 }
 

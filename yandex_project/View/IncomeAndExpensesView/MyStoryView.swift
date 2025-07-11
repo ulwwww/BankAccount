@@ -1,8 +1,15 @@
+//
+//  MyStoryView.swift
+//  yandex_project
+//
+//  Created by ulwww on 24.06.25.
+//
 import SwiftUI
 
 struct MyStoryView: View {
     @StateObject private var viewModel: MyStoryViewModel
     @Environment(\.presentationMode) private var presentationMode
+    @State private var isShowingAnalysis = false
 
     init(direction: Direction) {
         _viewModel = StateObject(wrappedValue: MyStoryViewModel(direction: direction))
@@ -145,7 +152,8 @@ struct MyStoryView: View {
 
     private var trailingToolbarItem: some ToolbarContent {
         ToolbarItem(placement: .navigationBarTrailing) {
-            Button {
+            NavigationLink(isActive: $isShowingAnalysis) {
+                AnalysisViewControllerRepresentable(isPresented: $isShowingAnalysis, direction: viewModel.direction)
             } label: {
                 Image(systemName: Utility.Icons.export)
                     .foregroundColor(Utility.Colors.accent)
@@ -195,5 +203,18 @@ struct MyStoryView_Previews: PreviewProvider {
             }
         }
     }
+}
+
+struct AnalysisViewControllerRepresentable: UIViewControllerRepresentable {
+    @Binding var isPresented: Bool
+        let direction: Direction
+
+        func makeUIViewController(context: Context) -> AnalysisViewController {
+            let vc = AnalysisViewController(direction: direction)
+            vc.onBack = { self.isPresented = false }
+            return vc
+        }
+    
+    func updateUIViewController(_ uiViewController: UIViewControllerType, context: Context) {}
 }
 
