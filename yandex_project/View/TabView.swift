@@ -20,15 +20,15 @@ struct MainTabView: View {
         TabView(selection: $selectedTab) {
             TransactionsListView(direction: .outcome)
                 .tabItem {
-                    Image(systemName: "chart.line.downtrend.xyaxis")
-                    Text("Расходы")
-                }
-                .tag(Tab.expenses)
+                Image(systemName: "chart.line.downtrend.xyaxis")
+                Text("Расходы")
+            }
+            .tag(Tab.expenses)
             TransactionsListView(direction: .income)
-                .tabItem {
-                    Image(systemName: "chart.line.uptrend.xyaxis")
-                    Text("Доходы")
-                }
+            .tabItem {
+                Image(systemName: "chart.line.uptrend.xyaxis")
+                Text("Доходы")
+            }
                 .tag(Tab.income)
             CheckView(vm: vm)
                 .accentColor(Utility.Colors.accent)
