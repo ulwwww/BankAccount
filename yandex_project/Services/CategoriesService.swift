@@ -5,23 +5,29 @@
 //  Created by ulwww on 10.06.25.
 //
 
+import Foundation
+
 final class CategoriesService {
-    func categories() async throws -> [Category] {
-        [
-            Category(id: 1, name: "Зарплата", emoji: "💰", isIncome: Direction.income),
-            Category(id: 2, name: "Подарки", emoji: "🎁", isIncome: Direction.income),
-            Category(id: 3, name: "Еда", emoji: "🍔", isIncome: Direction.outcome),
-            Category(id: 4, name: "Развлечения", emoji: "🎬", isIncome: Direction.outcome),
-        ]
+    private let networkClient: NetworkClient
+
+    public init(networkClient: NetworkClient) {
+        self.networkClient = networkClient
     }
     
-    func categories(direction: Direction) async throws -> [Category] {
-        let all = try await categories()
-        switch direction {
-        case .income:
-            return all.filter { $0.isIncome == Direction.income }
-        case .outcome:
-            return all.filter { $0.isIncome == Direction.outcome }
-        }
+    public func categories() async throws -> [Category] {
+        let dtos: [CategoryDTO] = try await networkClient.request(
+            method: .get,
+            path: "categories"
+        )
+        return dtos.map { $0.toDomain() }
+    }
+
+    public func categories(direction: Direction) async throws -> [Category] {
+        let typeString = direction.rawValue
+        let dtos: [CategoryDTO] = try await networkClient.request(
+            method: .get,
+            path: "categories/type/\(typeString)"
+        )
+        return dtos.map { $0.toDomain() }
     }
 }

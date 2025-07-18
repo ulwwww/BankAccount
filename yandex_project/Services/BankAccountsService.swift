@@ -7,28 +7,24 @@
 import Foundation
 
 final class BankAccountsService {
-    private var accounts: [BankAccount] = [
-        BankAccount(id: 1, userId: 1, name: "Основной счёт", balance: Decimal(string: "113.50")!, currency: "₽", createdAt: Date(), updatedAt: Date()),
-        BankAccount(id: 2, userId: 2, name: "Сбережения", balance: Decimal(string: "50022.10")!, currency: "₽", createdAt: Date(), updatedAt: Date())
-    ]
-
+    private let networkClient: NetworkClient
+    public init(networkClient: NetworkClient) {
+        self.networkClient = networkClient
+    }
     func getAllAccounts() async throws -> [BankAccount] {
-        return accounts
+        try await networkClient.request(method: .get, path: "accounts")
     }
 
-    func getAccount() async throws -> BankAccount {
-        guard let first = accounts.first else {
-            throw ErrorService.accountNotFound(id: 0)
-        }
-        return first
+    func getAccount(id: Int) async throws -> BankAccount {
+        try await networkClient.request(method: .get, path: "accounts/\(id)")
     }
 
     func updateAccount(_ newAccount: BankAccount) async throws -> BankAccount {
-        guard let index = accounts.firstIndex(where: {$0.id == newAccount.id}) else {
-            throw ErrorService.notFoundAllAccount
-        }
-        accounts[index] = newAccount
-        return newAccount
+        try await networkClient.request(method: .put, path: "accounts/\(newAccount.id)", body: newAccount)
+    }
+    
+    public func createAccount(_ newAccount: BankAccount) async throws -> BankAccount {
+        try await networkClient.request(method: .post, path: "accounts", body: newAccount)
     }
 }
 

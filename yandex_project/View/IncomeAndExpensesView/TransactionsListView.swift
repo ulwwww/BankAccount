@@ -11,113 +11,40 @@ enum DataError: Error {
 }
 
 struct TransactionsListView: View {
-    @State private var isLoading = false
     let direction: Direction
-    private let service = TransactionsService()
-    private let calendar = Calendar.current
+
+    private let networkClient: NetworkClient
+    private let transactionsService: TransactionsService
+    private let categoriesService: CategoriesService
+
+    @State private var isLoading = false
     @State private var transactions: [Transaction] = []
     @State private var emojiMap: [Int: String] = [:]
     @State private var categoryMap: [Int: String] = [:]
     @State private var isPresentingNew = false
     @State private var editingTx: Transaction?
 
+    private let calendar = Calendar.current
     private var totalSum: Decimal {
-        transactions.map { $0.amount }.reduce(0, +)
+        transactions.map(\.amount).reduce(0, +)
+    }
+
+    init(direction: Direction) {
+        self.direction = direction
+        let client = NetworkClient(
+            baseURL: URL(string: "https://shmr-finance.ru/api/v1")!,
+            token: "NAMSSUiLh9AGS534c5Rxlwww"
+        )
+        self.networkClient = client
+        self.transactionsService = TransactionsService(networkClient: client)
+        self.categoriesService   = CategoriesService(networkClient: client)
     }
 
     var body: some View {
         NavigationStack {
             ZStack {
-                VStack(alignment: .trailing) {
-                    NavigationLink(destination: MyStoryView(direction: direction)) {
-                        Image(systemName: Utility.Icons.history)
-                            .font(.system(size: 25, weight: .light))
-                            .foregroundColor(Utility.Colors.accent)
-                            .frame(width: 44, height: 44)
-                    }
-                    .clipShape(Circle())
-                    .padding(.horizontal, 16)
-
-                    HStack {
-                        Text(direction.titleToday)
-                            .font(.largeTitle).bold()
-                        Spacer()
-                    }
-                    .padding(.horizontal, 16)
-                    .padding(.top, 16)
-
-                    HStack {
-                        Text("Всего")
-                        Spacer()
-                        Text(NSDecimalNumber(decimal: totalSum), formatter: Utility.currency)
-                    }
-                    .padding(16)
-                    .background(Color.white)
-                    .cornerRadius(12)
-                    .padding(.horizontal, 16)
-
-                    ScrollView {
-                        Text("ОПЕРАЦИИ")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .padding(.leading, 35)
-                            .padding(.top, 16)
-
-                        VStack(spacing: 0) {
-                            ForEach(transactions) { transaction in
-                                Button {
-                                    editingTx = transaction
-                                } label: {
-                                    TransactionRow(
-                                        categoryName: categoryMap[transaction.categoryId] ?? "",
-                                        comment: transaction.comment,
-                                        amount: transaction.amount,
-                                        emoji: emojiMap[transaction.categoryId] ?? ""
-                                    )
-                                    .padding(.vertical, 12)
-                                    .padding(.horizontal)
-                                }
-                                .buttonStyle(.plain)
-
-                                if transaction.id != transactions.last?.id {
-                                    Divider()
-                                        .padding(.leading, 35)
-                                }
-                            }
-                        }
-                        .background(Color(.systemBackground))
-                        .cornerRadius(12)
-                        .padding(.horizontal, 16)
-                        .padding(.bottom, 16)
-                    }
-                    .refreshable {
-                        try? await loadData()
-                    }
-                    .task(id: direction) {
-                        try? await loadData()
-                    }
-                }
-
-                VStack {
-                    Spacer()
-                    HStack {
-                        Spacer()
-                        Button {
-                            isPresentingNew = true
-                        } label: {
-                            Image(systemName: Utility.Icons.plus)
-                                .font(.system(size: 25, weight: .light))
-                                .foregroundColor(.white)
-                                .frame(width: 60, height: 60)
-                        }
-                        .background(Color("Color"))
-                        .clipShape(Circle())
-                        .shadow(radius: 4)
-                        .padding(.trailing, 16)
-                        .padding(.bottom, 16)
-                    }
-                }
+                content
+                newButton
             }
             .background(Utility.Colors.background)
             .fullScreenCover(isPresented: $isPresentingNew) {
@@ -135,8 +62,8 @@ struct TransactionsListView: View {
                     direction: direction,
                     transaction: tx,
                     onSave: { updatedTx in
-                        if let index = transactions.firstIndex(where: { $0.id == updatedTx.id }) {
-                            transactions[index] = updatedTx
+                        if let idx = transactions.firstIndex(where: { $0.id == updatedTx.id }) {
+                            transactions[idx] = updatedTx
                         }
                     },
                     onDelete: {
@@ -145,28 +72,143 @@ struct TransactionsListView: View {
                 )
                 .ignoresSafeArea()
             }
+            .task(id: direction) {
+                do { try await loadData() }
+                catch { print("loadData error:", error) }
+            }
         }
     }
 
+    private var content: some View {
+        VStack(alignment: .trailing) {
+            historyLink
+            title
+            totalView
+            transactionList
+        }
+    }
+
+    private var historyLink: some View {
+        NavigationLink(destination: MyStoryView(direction: direction)) {
+            Image(systemName: Utility.Icons.history)
+                .font(.system(size: 25, weight: .light))
+                .foregroundColor(Utility.Colors.accent)
+                .frame(width: 44, height: 44)
+        }
+        .clipShape(Circle())
+        .padding(.horizontal, 16)
+    }
+
+    private var title: some View {
+        HStack {
+            Text(direction.titleToday)
+                .font(.largeTitle).bold()
+            Spacer()
+        }
+        .padding(.horizontal, 16)
+        .padding(.top, 16)
+    }
+
+    private var totalView: some View {
+        HStack {
+            Text("Всего")
+            Spacer()
+            Text(NSDecimalNumber(decimal: totalSum), formatter: Utility.currency)
+        }
+        .padding(16)
+        .background(Color.white)
+        .cornerRadius(12)
+        .padding(.horizontal, 16)
+    }
+
+    private var transactionList: some View {
+        ScrollView {
+            Text("ОПЕРАЦИИ")
+                .font(.caption)
+                .foregroundColor(.secondary)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.leading, 35)
+                .padding(.top, 16)
+
+            VStack(spacing: 0) {
+                ForEach(transactions) { transaction in
+                    Button {
+                        editingTx = transaction
+                    } label: {
+                        TransactionRow(
+                            categoryName: categoryMap[transaction.categoryId] ?? "",
+                            comment: transaction.comment,
+                            amount: transaction.amount,
+                            emoji: emojiMap[transaction.categoryId] ?? ""
+                        )
+                        .padding(.vertical, 12)
+                        .padding(.horizontal)
+                    }
+                    .buttonStyle(.plain)
+
+                    if transaction.id != transactions.last?.id {
+                        Divider().padding(.leading, 35)
+                    }
+                }
+            }
+            .background(Color(.systemBackground))
+            .cornerRadius(12)
+            .padding(.horizontal, 16)
+            .padding(.bottom, 16)
+        }
+        .refreshable {
+            try? await loadData()
+        }
+    }
+
+    private var newButton: some View {
+        VStack {
+            Spacer()
+            HStack {
+                Spacer()
+                Button {
+                    isPresentingNew = true
+                } label: {
+                    Image(systemName: Utility.Icons.plus)
+                        .font(.system(size: 25, weight: .light))
+                        .foregroundColor(.white)
+                        .frame(width: 60, height: 60)
+                }
+                .background(Color("Color"))
+                .clipShape(Circle())
+                .shadow(radius: 4)
+                .padding(.trailing, 16)
+                .padding(.bottom, 16)
+            }
+        }
+    }
     @MainActor
     private func loadData() async throws {
         guard !isLoading else { return }
         isLoading = true
         defer { isLoading = false }
-
-        let cats = service.categories
-        emojiMap = Dictionary(uniqueKeysWithValues: cats.map { ($0.id, String($0.emoji)) })
-        categoryMap = Dictionary(uniqueKeysWithValues: cats.map { ($0.id, $0.name) })
-
+        let cats = try await categoriesService.categories()
+        await MainActor.run {
+            emojiMap = Dictionary(uniqueKeysWithValues: cats.map { ($0.id, String($0.emoji)) })
+            categoryMap = Dictionary(uniqueKeysWithValues: cats.map { ($0.id, $0.name) })
+        }
         let startOfDay = calendar.startOfDay(for: Date())
         guard let startOfTomorrow = calendar.date(byAdding: .day, value: 1, to: startOfDay) else {
             throw DataError.invalidDate
         }
-        let all = try await service.takeTransaction(from: startOfDay, to: startOfTomorrow)
-        let incomeMap = Dictionary(uniqueKeysWithValues: cats.map { ($0.id, $0.isIncome) })
-        transactions = all.filter { tx in
-            guard let isIncome = incomeMap[tx.categoryId] else { return false }
-            return direction == .income ? isIncome == .income : isIncome == .outcome
+
+        let accountId = 1
+        let all = try await transactionsService.transactions(
+            accountId: accountId,
+            from: startOfDay,
+            to: startOfTomorrow
+        )
+        let incomeMap = Dictionary(uniqueKeysWithValues: cats.map { ($0.id, $0.isIncome == .income) })
+        await MainActor.run {
+            transactions = all.filter { tx in
+                guard let isInc = incomeMap[tx.categoryId] else { return false }
+                return direction == .income ? isInc : !isInc
+            }
         }
     }
 }
@@ -211,17 +253,9 @@ private struct TransactionRow: View {
 extension Direction {
     var titleToday: String {
         switch self {
-        case .income: return "Доходы сегодня"
+        case .income:  return "Доходы сегодня"
         case .outcome: return "Расходы сегодня"
         }
     }
 }
 
-struct TransactionsListView_Previews: PreviewProvider {
-    static var previews: some View {
-        Group {
-            TransactionsListView(direction: .outcome)
-            TransactionsListView(direction: .income)
-        }
-    }
-}
