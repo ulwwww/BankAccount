@@ -17,29 +17,34 @@ final class TransactionsListViewModel: ObservableObject {
         didSet { recalcDisplayedBalance() }
     }
     @Published private(set) var displayedBalance: Decimal = 0
+
     private var manualStartBalance: Decimal?
     private var computedBalanceAtManual: Decimal = 0
 
     private var computedBalanceFull: Decimal {
         let incomeSum = allTransactions
-            .filter {
-                incomeMap[$0.categoryId] == true
-            }
+            .filter { incomeMap[$0.categoryId] == true }
             .map(\.amount)
             .reduce(0, +)
         let outcomeSum = allTransactions
-            .filter {
-                incomeMap[$0.categoryId] == false
-            }
+            .filter { incomeMap[$0.categoryId] == false }
             .map(\.amount)
             .reduce(0, +)
         return incomeSum - outcomeSum
     }
 
-    private let service = TransactionsService()
+    private let transactionsService: TransactionsService
+    private let categoriesService: CategoriesService
     private let calendar = Calendar.current
 
     init() {
+        let client = NetworkClient(
+            baseURL: URL(string: "https://shmr-finance.ru/api/v1")!,
+            token: "NAMSSUiLh9AGS534c5Rxlwww"
+        )
+        self.transactionsService = TransactionsService(networkClient: client)
+        self.categoriesService = CategoriesService(networkClient: client)
+
         Task { await loadData() }
     }
 
@@ -48,15 +53,25 @@ final class TransactionsListViewModel: ObservableObject {
         guard !isLoading else { return }
         isLoading = true
         defer { isLoading = false }
-
-        let cats = service.categories
-        emojiMap  = Dictionary(uniqueKeysWithValues: cats.map { ($0.id, String($0.emoji)) })
-        incomeMap = Dictionary(uniqueKeysWithValues: cats.map { ($0.id, $0.isIncome == .income) })
-
-        let startOfDay = calendar.startOfDay(for: Date())
-        guard let tomorrow = calendar.date(byAdding: .day, value: 1, to: startOfDay) else { return }
         do {
-            allTransactions = try await service.takeTransaction(from: startOfDay, to: tomorrow)
+            let categories = try await categoriesService.categories()
+            emojiMap  = Dictionary(uniqueKeysWithValues: categories.map { ($0.id, String($0.emoji)) })
+            incomeMap = Dictionary(uniqueKeysWithValues: categories.map { ($0.id, $0.isIncome == .income) })
+        } catch {
+            print("Failed to load categories:", error)
+            return
+        }
+        let startOfDay = calendar.startOfDay(for: Date())
+        guard let endOfDay = calendar.date(byAdding: .day, value: 1, to: startOfDay) else {
+            return
+        }
+        do {
+            let accountId = 1
+            allTransactions = try await transactionsService.transactions(
+                accountId: accountId,
+                from: startOfDay,
+                to: endOfDay
+            )
             recalcDisplayedBalance()
         } catch {
             print("Failed to load transactions:", error)
@@ -102,5 +117,4 @@ enum CurrencyData: String, CaseIterable, Identifiable {
         case .eur: "€"
         }
     }
-    
 }

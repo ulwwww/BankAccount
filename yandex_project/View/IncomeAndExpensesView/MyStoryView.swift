@@ -12,7 +12,7 @@ struct MyStoryView: View {
     @State private var isShowingAnalysis = false
 
     init(direction: Direction) {
-        _viewModel = StateObject(wrappedValue: MyStoryViewModel(direction: direction))
+        _viewModel = StateObject(wrappedValue: MyStoryViewModel(direction: direction, accountId: 1))
     }
 
     var body: some View {

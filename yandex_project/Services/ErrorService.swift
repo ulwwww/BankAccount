@@ -26,3 +26,12 @@ enum ErrorService: LocalizedError {
         }
     }
 }
+
+public enum HTTPError: Error {
+    case invalidURL
+    case httpError(statusCode: Int, data: Data?)
+    case encodingError(Error)
+    case decodingError(Error)
+    case transportError(Error)
+    case invalidResponse
+}
