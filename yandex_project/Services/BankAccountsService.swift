@@ -12,19 +12,23 @@ final class BankAccountsService {
         self.networkClient = networkClient
     }
     func getAllAccounts() async throws -> [BankAccount] {
-        try await networkClient.request(method: .get, path: "accounts")
+        let dtos: [BankAccountDTO] = try await networkClient.request(method: .get, path: "accounts")
+        return dtos.map { $0.toDomain() }
     }
 
     func getAccount(id: Int) async throws -> BankAccount {
-        try await networkClient.request(method: .get, path: "accounts/\(id)")
+        let dtos: BankAccountDTO = try await networkClient.request(method: .get, path: "accounts/\(id)")
+        return dtos.toDomain()
     }
 
     func updateAccount(_ newAccount: BankAccount) async throws -> BankAccount {
-        try await networkClient.request(method: .put, path: "accounts/\(newAccount.id)", body: newAccount)
+        let dtos: BankAccountDTO = try await networkClient.request(method: .put, path: "accounts/\(newAccount.id)", body: newAccount)
+        return dtos.toDomain()
     }
     
     public func createAccount(_ newAccount: BankAccount) async throws -> BankAccount {
-        try await networkClient.request(method: .post, path: "accounts", body: newAccount)
+        let dtos: BankAccountDTO = try await networkClient.request(method: .post, path: "accounts", body: newAccount)
+        return dtos.toDomain()
     }
 }
 

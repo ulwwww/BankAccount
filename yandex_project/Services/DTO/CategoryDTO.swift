@@ -6,7 +6,7 @@
 //
 import Foundation
 
-public struct CategoryDTO: Codable {
+struct CategoryDTO: Codable {
     public let id: Int
     public let name: String
     public let emoji: String

@@ -50,7 +50,6 @@ public final class NetworkClient {
         }
 
         let (data, response) = try await session.data(for: request)
-
         guard let http = response as? HTTPURLResponse else {
             throw HTTPError.invalidResponse
         }
@@ -88,7 +87,6 @@ extension NetworkClient {
             request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         }
         request.setValue("application/json", forHTTPHeaderField: "Accept")
-
         let (data, response) = try await session.data(for: request)
         guard let http = response as? HTTPURLResponse,
               (200...299).contains(http.statusCode) else

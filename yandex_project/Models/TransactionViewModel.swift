@@ -6,6 +6,7 @@
 //
 import Foundation
 import SwiftUI
+import SwiftData
 
 
 final class TransactionsListViewModel: ObservableObject {
@@ -66,7 +67,7 @@ final class TransactionsListViewModel: ObservableObject {
             return
         }
         do {
-            let accountId = 1
+            let accountId = 725
             allTransactions = try await transactionsService.transactions(
                 accountId: accountId,
                 from: startOfDay,

@@ -15,18 +15,14 @@ final class CategoriesService {
     }
     
     public func categories() async throws -> [Category] {
-        let dtos: [CategoryDTO] = try await networkClient.request(
-            method: .get,
-            path: "categories"
-        )
+        let dtos: [CategoryDTO] = try await networkClient.request(method: .get, path: "categories")
         return dtos.map { $0.toDomain() }
     }
 
     public func categories(direction: Direction) async throws -> [Category] {
-        let typeString = direction.rawValue
         let dtos: [CategoryDTO] = try await networkClient.request(
             method: .get,
-            path: "categories/type/\(typeString)"
+            path: "categories/type/\(direction.rawValue)"
         )
         return dtos.map { $0.toDomain() }
     }

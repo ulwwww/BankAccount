@@ -6,6 +6,10 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		2CCE70CF2E2CECDD007C822D /* Settings.bundle in Resources */ = {isa = PBXBuildFile; fileRef = 2CCE70CE2E2CECDD007C822D /* Settings.bundle */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXContainerItemProxy section */
 		2C4DF0A62DFB8B8300A21E92 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -34,6 +38,7 @@
 		2C4DF0A22DFB8B8300A21E92 /* yandex_projectTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = yandex_projectTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		2C4DF0B22DFB8CEF00A21E92 /* yandex_projectTest.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = yandex_projectTest.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		2C4DF0D12DFB934200A21E92 /* yandex_projectTesting.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = yandex_projectTesting.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		2CCE70CE2E2CECDD007C822D /* Settings.bundle */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.plug-in"; path = Settings.bundle; sourceTree = "<group>"; };
 		2CEFAD2B2DF71FD7009BD3D5 /* yandex_project.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = yandex_project.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
@@ -52,6 +57,13 @@
 			);
 			target = 2C4DF0B12DFB8CEF00A21E92 /* yandex_projectTest */;
 		};
+		2CCE70CC2E2CDC5B007C822D /* Exceptions for "yandex_project" folder in "yandex_project" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				View/Untitled.swift,
+			);
+			target = 2CEFAD2A2DF71FD7009BD3D5 /* yandex_project */;
+		};
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -66,6 +78,9 @@
 		};
 		2CEFAD2D2DF71FD7009BD3D5 /* yandex_project */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				2CCE70CC2E2CDC5B007C822D /* Exceptions for "yandex_project" folder in "yandex_project" target */,
+			);
 			path = yandex_project;
 			sourceTree = "<group>";
 		};
@@ -106,6 +121,7 @@
 		2CEFAD222DF71FD7009BD3D5 = {
 			isa = PBXGroup;
 			children = (
+				2CCE70CE2E2CECDD007C822D /* Settings.bundle */,
 				2CEFAD2D2DF71FD7009BD3D5 /* yandex_project */,
 				2CEFAD2C2DF71FD7009BD3D5 /* Products */,
 				2C4DF0C72DFB8E2400A21E92 /* yandex_projectTest */,
@@ -294,6 +310,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				2CCE70CF2E2CECDD007C822D /* Settings.bundle in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

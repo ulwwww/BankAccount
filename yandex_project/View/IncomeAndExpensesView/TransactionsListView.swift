@@ -5,6 +5,7 @@
 //  Created by ulwww on 18.06.25.
 //
 import SwiftUI
+import SwiftData
 
 enum DataError: Error {
     case invalidDate
@@ -12,7 +13,6 @@ enum DataError: Error {
 
 struct TransactionsListView: View {
     let direction: Direction
-
     private let networkClient: NetworkClient
     private let transactionsService: TransactionsService
     private let categoriesService: CategoriesService
@@ -37,7 +37,7 @@ struct TransactionsListView: View {
         )
         self.networkClient = client
         self.transactionsService = TransactionsService(networkClient: client)
-        self.categoriesService   = CategoriesService(networkClient: client)
+        self.categoriesService = CategoriesService(networkClient: client)
     }
 
     var body: some View {
@@ -196,10 +196,8 @@ struct TransactionsListView: View {
         guard let startOfTomorrow = calendar.date(byAdding: .day, value: 1, to: startOfDay) else {
             throw DataError.invalidDate
         }
-
-        let accountId = 1
         let all = try await transactionsService.transactions(
-            accountId: accountId,
+            accountId: 1,
             from: startOfDay,
             to: startOfTomorrow
         )
