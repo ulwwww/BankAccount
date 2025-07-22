@@ -51,7 +51,7 @@ final class MyStoryViewModel: ObservableObject {
         self._startDate = Published(initialValue: calendar.startOfDay(for: monthAgo))
         self._endDate   = Published(initialValue: calendar.startOfDay(for: now))
         let client = NetworkClient(
-            baseURL: URL(string: "https://shmr-finance.ru/api/v1")!,
+            baseURL: URL(string: "https://shmr-finance.ru/api/v1/")!,
             token: "NAMSSUiLh9AGS534c5Rxlwww"
         )
         self.transactionsService = TransactionsService(networkClient: client)
@@ -75,7 +75,6 @@ final class MyStoryViewModel: ObservableObject {
             self.emojiMap = emojis
             let (start, end) = dateInterval(from: startDate, to: endDate)
             let all = try await transactionsService.transactions(
-                accountId: accountId,
                 from: start,
                 to: end
             )

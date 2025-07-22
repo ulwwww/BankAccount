@@ -40,7 +40,7 @@ final class TransactionsListViewModel: ObservableObject {
 
     init() {
         let client = NetworkClient(
-            baseURL: URL(string: "https://shmr-finance.ru/api/v1")!,
+            baseURL: URL(string: "https://shmr-finance.ru/api/v1/")!,
             token: "NAMSSUiLh9AGS534c5Rxlwww"
         )
         self.transactionsService = TransactionsService(networkClient: client)
@@ -67,9 +67,7 @@ final class TransactionsListViewModel: ObservableObject {
             return
         }
         do {
-            let accountId = 725
             allTransactions = try await transactionsService.transactions(
-                accountId: accountId,
                 from: startOfDay,
                 to: endOfDay
             )

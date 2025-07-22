@@ -12,150 +12,55 @@ enum OperationType: String, Codable {
 }
 
 @Model
-final class TransactionEntity {
+final class CategoryEntity {
     @Attribute(.unique) var id: Int
-    @Attribute var accountId: Int
-    @Attribute var categoryId: Int
-    @Attribute var amount: Decimal
-    @Attribute var comment: String
-    @Attribute var transactionDate: Date
-    @Attribute var createdAt: Date
-    @Attribute var updatedAt: Date
-
-    init(id: Int, accountId: Int, categoryId: Int, amount: Decimal, comment: String, transactionDate: Date, createdAt: Date, updatedAt: Date) {
-        self.id = id
-        self.accountId = accountId
-        self.categoryId = categoryId
-        self.amount = amount
-        self.comment = comment
-        self.transactionDate = transactionDate
-        self.createdAt = createdAt
-        self.updatedAt = updatedAt
+    var name: String
+    var emoji: String
+    var isIncome: Bool
+    
+    init(from domain: Category) {
+        self.id = domain.id
+        self.name = domain.name
+        self.emoji = String(domain.emoji)
+        self.isIncome = domain.isIncome == .income
     }
-}
-
-@Model
-final class BackupOperationEntity {
-    @Attribute(.unique) var id: Int
-    @Attribute var type: OperationType
-    @Attribute var payload: Data?
-    @Attribute var payloadTransactionId: Int?
-
-    init(id: Int, type: OperationType, payload: Data?, payloadTransactionId: Int?) {
-        self.id = id
-        self.type = type
-        self.payload = payload
-        self.payloadTransactionId = payloadTransactionId
+    
+    func toCategory() -> Category {
+        Category(
+            id: id,
+            name: name,
+            emoji: emoji.first ?? "?",
+            isIncome: isIncome ? .income : .outcome
+        )
     }
 }
 
 @Model
 final class BankAccountEntity {
     @Attribute(.unique) var id: Int
-    @Attribute var userId: Int
-    @Attribute var name: String
-    @Attribute var balance: Decimal
-    @Attribute var currency: String
-    @Attribute var createdAt: Date?
-    @Attribute var updatedAt: Date?
-
-    init(id: Int, userId: Int, name: String, balance: Decimal, currency: String, createdAt: Date? = nil, updatedAt: Date? = nil) {
-        self.id = id
-        self.userId = userId
-        self.name = name
-        self.balance = balance
-        self.currency = currency
-        self.createdAt = createdAt
-        self.updatedAt = updatedAt
+    var userId: Int?
+    var name: String
+    var balance: String
+    var currency: String
+    var createdAt: Date?
+    var updatedAt: Date?
+    
+    init(from domain: BankAccount) {
+        self.id = domain.id
+        self.userId = domain.userId
+        self.name = domain.name
+        self.balance = "\(domain.balance)"
+        self.currency = domain.currency
+        self.createdAt = domain.createdAt
+        self.updatedAt = domain.updatedAt
     }
-}
-
-@Model
-final class BackupAccountOperationEntity {
-    @Attribute(.unique) var id: Int
-    @Attribute var type: OperationType
-    @Attribute var payloadAccountId: Int
-
-    init(id: Int, type: OperationType, payloadAccountId: Int) {
-        self.id = id
-        self.type = type
-        self.payloadAccountId = payloadAccountId
-    }
-}
-
-@Model
-final class CategoryEntity {
-    @Attribute(.unique) var id: Int
-    @Attribute var name: String
-    @Attribute var emoji: String
-    @Attribute var isIncome: Bool
-
-    init(id: Int, name: String, emoji: String, isIncome: Bool) {
-        self.id = id
-        self.name = name
-        self.emoji = emoji
-        self.isIncome = isIncome
-    }
-}
-
-extension TransactionEntity {
-    convenience init(from domain: Transaction) {
-        self.init(
-            id: domain.id,
-            accountId: domain.accountId,
-            categoryId: domain.categoryId,
-            amount: domain.amount,
-            comment: domain.comment,
-            transactionDate: domain.transactionDate,
-            createdAt: domain.createdAt,
-            updatedAt: domain.updatedAt
-        )
-    }
-    func update(from domain: Transaction) {
-        accountId = domain.accountId
-        categoryId = domain.categoryId
-        amount = domain.amount
-        comment = domain.comment
-        transactionDate = domain.transactionDate
-        updatedAt = domain.updatedAt
-    }
-    func toDomain() -> Transaction {
-        Transaction(
-            id: id,
-            accountId: accountId,
-            categoryId: categoryId,
-            amount: amount,
-            comment: comment,
-            transactionDate: transactionDate,
-            createdAt: createdAt,
-            updatedAt: updatedAt
-        )
-    }
-}
-
-extension BankAccountEntity {
-    convenience init(from domain: BankAccount) {
-        self.init(
-            id: domain.id,
-            userId: domain.userId,
-            name: domain.name,
-            balance: domain.balance,
-            currency: domain.currency,
-            createdAt: domain.createdAt,
-            updatedAt: domain.updatedAt
-        )
-    }
-    func update(from domain: BankAccount) {
-        name = domain.name
-        balance = domain.balance
-        updatedAt = domain.updatedAt
-    }
-    func toDomain() -> BankAccount {
+    
+    func toBankAccount() -> BankAccount {
         BankAccount(
             id: id,
-            userId: userId,
+            userId: userId!,
             name: name,
-            balance: balance,
+            balance: Decimal(string: balance) ?? 0,
             currency: currency,
             createdAt: createdAt,
             updatedAt: updatedAt
@@ -163,21 +68,54 @@ extension BankAccountEntity {
     }
 }
 
-extension CategoryEntity {
-    convenience init(from domain: Category) {
-        self.init(
-            id: domain.id,
-            name: domain.name,
-            emoji: String(domain.emoji),
-            isIncome: domain.isIncome == .income
+@Model
+final class TransactionEntity {
+    @Attribute(.unique) var id: Int
+    var account: Int
+    var category: Int
+    var amount: Decimal
+    var comment: String?
+    var transactionDate: Date
+    var createdAt: Date
+    var updatedAt: Date
+
+    init(from domain: Transaction) {
+        self.id = domain.id
+        self.account = domain.accountId
+        self.category = domain.categoryId
+        self.amount = domain.amount
+        self.comment = domain.comment
+        self.transactionDate = domain.transactionDate
+        self.createdAt = domain.createdAt
+        self.updatedAt = domain.updatedAt
+    }
+
+    func toTransaction() -> Transaction {
+        Transaction(
+            id: id,
+            accountId: account,
+            categoryId: category,
+            amount: amount,
+            comment: comment ?? "",
+            transactionDate: transactionDate,
+            createdAt: createdAt,
+            updatedAt: updatedAt
         )
     }
-    func toDomain() -> Category {
-        Category(
-            id: id,
-            name: name,
-            emoji: Character(emoji),
-            isIncome: isIncome ? .income : .outcome
-        )
+}
+
+@Model
+final class BackupOperationEntity {
+    @Attribute(.unique) var id: Int
+    var type: OperationType
+    var payloadData: Data?
+    var payloadTransactionId: Int
+    var createdAt: Date
+    init(id: Int, type: OperationType, payloadData: Data?, payloadTransactionId: Int) {
+        self.id = id
+        self.type = type
+        self.payloadData = payloadData
+        self.payloadTransactionId = payloadTransactionId
+        self.createdAt = Date()
     }
 }

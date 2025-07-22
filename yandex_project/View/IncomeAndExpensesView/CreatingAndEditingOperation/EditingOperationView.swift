@@ -59,14 +59,13 @@ struct EditingOperationView: View {
         self.onSave = onSave
         self.onDelete = onDelete
 
-        // configure client & services
         let client = NetworkClient(
-            baseURL: URL(string: "https://shmr-finance.ru/swagger")!,
+            baseURL: URL(string: "https://shmr-finance.ru/api/v1/")!,
             token: "NAMSSUiLh9AGS534c5Rxlwww"
         )
         self.networkClient = client
         self.transactionsService = TransactionsService(networkClient: client)
-        self.categoriesService   = CategoriesService(networkClient: client)
+        self.categoriesService = CategoriesService(networkClient: client)
         self.bankAccountsService = BankAccountsService(networkClient: client)
 
         _date = State(initialValue: transaction?.transactionDate ?? Date())
@@ -79,7 +78,7 @@ struct EditingOperationView: View {
             return s
         }()
         _amountText = State(initialValue: initialAmountString)
-        _comment    = State(initialValue: transaction?.comment ?? "")
+        _comment = State(initialValue: transaction?.comment ?? "")
         _selectedCategory = State(initialValue: nil)
     }
 

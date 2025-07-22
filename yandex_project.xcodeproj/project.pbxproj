@@ -57,13 +57,6 @@
 			);
 			target = 2C4DF0B12DFB8CEF00A21E92 /* yandex_projectTest */;
 		};
-		2CCE70CC2E2CDC5B007C822D /* Exceptions for "yandex_project" folder in "yandex_project" target */ = {
-			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
-			membershipExceptions = (
-				View/Untitled.swift,
-			);
-			target = 2CEFAD2A2DF71FD7009BD3D5 /* yandex_project */;
-		};
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -78,9 +71,6 @@
 		};
 		2CEFAD2D2DF71FD7009BD3D5 /* yandex_project */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			exceptions = (
-				2CCE70CC2E2CDC5B007C822D /* Exceptions for "yandex_project" folder in "yandex_project" target */,
-			);
 			path = yandex_project;
 			sourceTree = "<group>";
 		};

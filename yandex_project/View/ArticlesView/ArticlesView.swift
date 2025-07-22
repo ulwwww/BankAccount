@@ -15,7 +15,7 @@ struct ArticlesView: View {
     
     init() {
         let client = NetworkClient(
-            baseURL: URL(string: "https://shmr-finance.ru/api/v1")!,
+            baseURL: URL(string: "https://shmr-finance.ru/api/v1/")!,
             token: "NAMSSUiLh9AGS534c5Rxlwww"
         )
         self.transactionsService = TransactionsService(networkClient: client)

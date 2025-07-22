@@ -1,8 +1,6 @@
 //
-//  TransactionListView.swift
+//  TransactionsListView.swift
 //  yandex_project
-//
-//  Created by ulwww on 18.06.25.
 //
 import SwiftUI
 import SwiftData
@@ -32,7 +30,7 @@ struct TransactionsListView: View {
     init(direction: Direction) {
         self.direction = direction
         let client = NetworkClient(
-            baseURL: URL(string: "https://shmr-finance.ru/api/v1")!,
+            baseURL: URL(string: "https://shmr-finance.ru/api/v1/")!,
             token: "NAMSSUiLh9AGS534c5Rxlwww"
         )
         self.networkClient = client
@@ -50,9 +48,7 @@ struct TransactionsListView: View {
             .fullScreenCover(isPresented: $isPresentingNew) {
                 EditingOperationView(
                     direction: direction,
-                    onSave: { newTx in
-                        transactions.append(newTx)
-                    },
+                    onSave: { newTx in transactions.append(newTx) },
                     onDelete: {}
                 )
                 .ignoresSafeArea()
@@ -66,15 +62,12 @@ struct TransactionsListView: View {
                             transactions[idx] = updatedTx
                         }
                     },
-                    onDelete: {
-                        transactions.removeAll { $0.id == tx.id }
-                    }
+                    onDelete: { transactions.removeAll { $0.id == tx.id } }
                 )
                 .ignoresSafeArea()
             }
             .task(id: direction) {
-                do { try await loadData() }
-                catch { print("loadData error:", error) }
+                await loadData()
             }
         }
     }
@@ -157,7 +150,7 @@ struct TransactionsListView: View {
             .padding(.bottom, 16)
         }
         .refreshable {
-            try? await loadData()
+            await loadData()
         }
     }
 
@@ -182,68 +175,36 @@ struct TransactionsListView: View {
             }
         }
     }
+
     @MainActor
-    private func loadData() async throws {
+    private func loadData() async {
         guard !isLoading else { return }
         isLoading = true
         defer { isLoading = false }
-        let cats = try await categoriesService.categories()
-        await MainActor.run {
-            emojiMap = Dictionary(uniqueKeysWithValues: cats.map { ($0.id, String($0.emoji)) })
-            categoryMap = Dictionary(uniqueKeysWithValues: cats.map { ($0.id, $0.name) })
-        }
-        let startOfDay = calendar.startOfDay(for: Date())
-        guard let startOfTomorrow = calendar.date(byAdding: .day, value: 1, to: startOfDay) else {
-            throw DataError.invalidDate
-        }
-        let all = try await transactionsService.transactions(
-            accountId: 1,
-            from: startOfDay,
-            to: startOfTomorrow
-        )
-        let incomeMap = Dictionary(uniqueKeysWithValues: cats.map { ($0.id, $0.isIncome == .income) })
-        await MainActor.run {
-            transactions = all.filter { tx in
-                guard let isInc = incomeMap[tx.categoryId] else { return false }
-                return direction == .income ? isInc : !isInc
-            }
-        }
-    }
-}
 
-private struct TransactionRow: View {
-    let categoryName: String
-    let comment: String
-    let amount: Decimal
-    let emoji: String
-
-    var body: some View {
-        HStack(spacing: 12) {
-            ZStack {
-                Circle()
-                    .fill(Utility.Colors.iconBackground)
-                    .frame(width: 30, height: 30)
-                Text(emoji)
-                    .font(.system(size: 20))
+        do {
+            let cats = try await categoriesService.categories()
+            let nameMap = Dictionary(uniqueKeysWithValues: cats.map { ($0.id, $0.name) })
+            let emojiMapLocal = Dictionary(uniqueKeysWithValues: cats.map { ($0.id, String($0.emoji)) })
+            let typeMap = Dictionary(uniqueKeysWithValues: cats.map { ($0.id, $0.isIncome) })
+            let startOfDay = calendar.startOfDay(for: Date())
+            guard let startOfTomorrow = calendar.date(byAdding: .day, value: 1, to: startOfDay) else {
+                throw DataError.invalidDate
             }
-            VStack(alignment: .leading, spacing: 2) {
-                Text(categoryName)
-                    .font(.body)
-                    .foregroundColor(.primary)
-                    .lineLimit(1)
-                if !comment.isEmpty {
-                    Text(comment)
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                        .lineLimit(1)
-                }
+            let all = try await transactionsService.transactions(
+                from: startOfDay,
+                to: startOfTomorrow
+            )
+            let filtered = all.filter { tx in
+                typeMap[tx.categoryId] == direction
             }
-            Spacer()
-            Text(NSDecimalNumber(decimal: amount), formatter: Utility.currency)
-                .font(.body)
-                .foregroundColor(.primary)
-            Image(systemName: Utility.Icons.chevron)
-                .foregroundColor(.secondary)
+            await MainActor.run {
+                categoryMap = nameMap
+                emojiMap = emojiMapLocal
+                transactions = filtered
+            }
+        } catch {
+            print("loadData error:", error)
         }
     }
 }
@@ -256,4 +217,3 @@ extension Direction {
         }
     }
 }
-

@@ -4,6 +4,7 @@
 //
 //  Created by ulwww on 10.06.25.
 //
+//
 import Foundation
 import SwiftData
 
@@ -21,17 +22,13 @@ public struct BackupOperation: Codable {
     let payloadTransactionId: Int?
 }
 
-@MainActor
-protocol BackupStorage {
-    func add(transaction: Transaction?, transactionId: Int?, for op: OperationType) async throws
-    func pendingOperations() async throws -> [BackupOperation]
-    func remove(id: Int) async throws
-}
-
 final class TransactionsService {
     private let networkClient: NetworkClient
-    @MainActor private lazy var storage: TransactionsStorage = SwiftDataTransactionsStorage()
-    @MainActor private lazy var backup: BackupStorage = SwiftDataBackupStorage()
+    private lazy var bankAccountService: BankAccountsService = {
+        BankAccountsService(networkClient: self.networkClient)
+    }()
+    private var storage: TransactionsStorageProtocol = StorageManager.shared.transactions
+    private var backup: BackupStorageProtocol = StorageManager.shared.backup
     private static let dateOnlyFormatter: DateFormatter = {
         let f = DateFormatter()
         f.dateFormat = "yyyy-MM-dd"
@@ -42,44 +39,83 @@ final class TransactionsService {
     public init(networkClient: NetworkClient) {
         self.networkClient = networkClient
     }
+    
+    private func currentAccountId() async throws -> Int {
+        try await bankAccountService.currentIdAccount()
+    }
 
-    public func transactions(accountId: Int, from startDate: Date, to endDate: Date) async throws -> [Transaction] {
+    public func transactions(from startDate: Date, to endDate: Date) async throws -> [Transaction] {
+        let accountId = try await currentAccountId()
         await syncIfNeeded()
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(secondsFromGMT: 0)!
+        let utcStart = calendar.startOfDay(for: startDate)
+        let utcEnd = calendar.date(byAdding: .day, value: 1, to: calendar.startOfDay(for: endDate))!
         let queryItems = [
-            URLQueryItem(name: "startDate", value: Self.dateOnlyFormatter.string(from: startDate)),
-            URLQueryItem(name: "endDate", value: Self.dateOnlyFormatter.string(from: endDate))
+            URLQueryItem(name: "startDate", value: Self.dateOnlyFormatter.string(from: utcStart)),
+            URLQueryItem(name: "endDate", value: Self.dateOnlyFormatter.string(from: utcEnd))
         ]
-        let url = try makeURL(path: "transactions/account/\(accountId)/period", query: queryItems)
+
         do {
-            let dtos: [TransactionDTO] = try await networkClient.request(
-                url: url,
+            let apiResponses: [APITransactionResponse] = try await networkClient.request(
                 method: .get,
-                responseType: [TransactionDTO].self
+                path:   "transactions/account/\(accountId)/period",
+                queryItems: queryItems
             )
-            let txns = dtos.map { $0.toDomain() }
+
+            let txns = apiResponses.map { api in
+                Transaction(
+                    id: api.id,
+                    accountId: api.account.id,
+                    categoryId: api.category.id,
+                    amount: Decimal(string: api.amount) ?? .zero,
+                    comment: api.comment ?? "",
+                    transactionDate: api.parsedTransactionDate,
+                    createdAt: api.parsedCreatedAt,
+                    updatedAt: api.parsedUpdatedAt
+                )
+            }
+
             try await storage.sync(transactions: txns)
-            return txns.filter { $0.transactionDate >= startDate && $0.transactionDate <= endDate }
+            return txns
         } catch {
-            let local = try await storage.fetchAll().filter { $0.transactionDate >= startDate && $0.transactionDate <= endDate }
-            throw TransactionsServiceError.networkFallback(local, error)
+            let local = try await storage.getAll()
+            let filtered = local.filter {
+                $0.transactionDate >= utcStart && $0.transactionDate < utcEnd
+            }
+            throw TransactionsServiceError.networkFallback(filtered, error)
         }
     }
 
     public func createTransaction(_ txn: Transaction) async throws -> Transaction {
         try await performBackupable(.add, txn, txn.id) {
-            let dto = TransactionDTO.fromDomain(txn)
-            let response: TransactionDTO = try await self.networkClient.request(
+            let request = CreateTransactionRequest(
+                accountId: txn.accountId,
+                categoryId: txn.categoryId,
+                amount: "\(txn.amount)",
+                transactionDate: txn.transactionDate,
+                comment: txn.comment
+            )
+            let response: APITransactionResponse = try await self.networkClient.request(
                 method: .post,
                 path: "transactions",
-                body: dto
+                body: request
             )
-            let created = response.toDomain()
-            try await self.storage.create(created)
+            let created = Transaction(
+                id: response.id,
+                accountId: response.account.id,
+                categoryId: response.category.id,
+                amount: Decimal(string: response.amount) ?? .zero,
+                comment: response.comment ?? "",
+                transactionDate: response.parsedTransactionDate,
+                createdAt: response.parsedCreatedAt,
+                updatedAt: response.parsedUpdatedAt
+            )
+
+            try await self.storage.create(transaction: created)
             return created
         }
     }
-
-    
 
     public func updateTransaction(_ txn: Transaction) async throws -> Transaction {
         try await performBackupable(.update, txn, txn.id) {
@@ -90,7 +126,7 @@ final class TransactionsService {
                 body: dto
             )
             let updated = response.toDomain()
-            try await self.storage.update(updated)
+            try await self.storage.update(transaction: updated)
             return updated
         }
     }
@@ -105,25 +141,16 @@ final class TransactionsService {
         }
     }
 
-    private func makeURL(path: String, query: [URLQueryItem]?) throws -> URL {
-        let base = networkClient.baseURL.appendingPathComponent(path)
-        guard var comps = URLComponents(url: base, resolvingAgainstBaseURL: false) else {
-            throw TransactionsServiceError.urlError
-        }
-        comps.queryItems = query
-        guard let url = comps.url else {
-            throw TransactionsServiceError.urlError
-        }
-        return url
-    }
-
     private func syncIfNeeded() async {
         do {
             try await syncBackupToServer()
-        } catch { print(error) }
+        } catch {
+            print("sync failed: \(error)")
+        }
     }
 
-    private func performBackupable<T>(_ op: OperationType, _ txn: Transaction?, _ id: Int?, block: @escaping () async throws -> T) async throws -> T {
+    private func performBackupable<T>(_ op: OperationType, _ txn: Transaction?, _ id: Int?, block: @escaping () async throws -> T
+    ) async throws -> T {
         do {
             return try await block()
         } catch {
@@ -135,19 +162,15 @@ final class TransactionsService {
     public func syncBackupToServer() async throws {
         let pending = try await backup.pendingOperations()
         for entry in pending {
-            do {
-                switch entry.type {
-                case .add:
-                    if let t = entry.payload { _ = try await createTransaction(t) }
-                case .update:
-                    if let t = entry.payload { _ = try await updateTransaction(t) }
-                case .delete:
-                    if let tid = entry.payloadTransactionId { try await deleteTransaction(id: tid) }
-                }
-                try await backup.remove(id: entry.id)
-            } catch {
-                print(error)
+            switch entry.type {
+            case .add:
+                if let t = entry.payload { _ = try await createTransaction(t) }
+            case .update:
+                if let t = entry.payload { _ = try await updateTransaction(t) }
+            case .delete:
+                if let tid = entry.payloadTransactionId { try await deleteTransaction(id: tid) }
             }
+            try await backup.remove(id: entry.id)
         }
     }
 }
