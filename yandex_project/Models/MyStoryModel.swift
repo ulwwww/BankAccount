@@ -10,7 +10,7 @@ final class MyStoryViewModel: ObservableObject {
     @Published var transactions: [Transaction] = []
     @Published var emojiMap: [Int: String] = [:]
     @Published var sortOption: SortOption = .date
-    @Published var flagLoading = false
+    @Published var isLoading = false
     @Published var startDate: Date
     @Published var endDate: Date
 
@@ -19,25 +19,17 @@ final class MyStoryViewModel: ObservableObject {
         var id: Self { self }
         var title: String {
             switch self {
-            case .date: return "По дате"
+            case .date:   return "По дате"
             case .amount: return "По сумме"
             }
         }
     }
 
     let direction: Direction
-    private let service = TransactionsService()
+    let accountId: Int
+    private let transactionsService: TransactionsService
+    private let categoriesService: CategoriesService
     private let calendar: Calendar
-
-    init(direction: Direction, calendar: Calendar = .current) {
-        self.direction = direction
-        self.calendar = calendar
-        let now = Date()
-        let monthAgo = calendar.date(byAdding: .month, value: -1, to: now)!
-        self._startDate = Published(initialValue: calendar.startOfDay(for: monthAgo))
-        self._endDate = Published(initialValue: calendar.startOfDay(for: now))
-        Task { await loadData() }
-    }
 
     var totalSum: Decimal {
         transactions.map(\.amount).reduce(0, +)
@@ -45,30 +37,54 @@ final class MyStoryViewModel: ObservableObject {
 
     var sortedTransactions: [Transaction] {
         switch sortOption {
-        case .date: return transactions.sorted { $0.createdAt > $1.createdAt }
+        case .date:   return transactions.sorted { $0.createdAt > $1.createdAt }
         case .amount: return transactions.sorted { $0.amount > $1.amount }
         }
     }
 
+    init(direction: Direction, accountId: Int, calendar: Calendar = .current) {
+        self.direction = direction
+        self.accountId = accountId
+        self.calendar  = calendar
+        let now = Date()
+        let monthAgo = calendar.date(byAdding: .month, value: -1, to: now)!
+        self._startDate = Published(initialValue: calendar.startOfDay(for: monthAgo))
+        self._endDate   = Published(initialValue: calendar.startOfDay(for: now))
+        let client = NetworkClient(
+            baseURL: URL(string: "https://shmr-finance.ru/api/v1/")!,
+            token: "NAMSSUiLh9AGS534c5Rxlwww"
+        )
+        self.transactionsService = TransactionsService(networkClient: client)
+        self.categoriesService = CategoriesService(networkClient: client)
+
+        Task { await loadData() }
+    }
+
     @MainActor
     func loadData() async {
-        guard !flagLoading else { return }
-        flagLoading = true
-        defer {
-            flagLoading = false
-        }
-        let (start, end) = dateInterval(from: startDate, to: endDate)
-        let categories = service.categories
-        emojiMap = categories.reduce(into: [:]) { $0[$1.id] = String($1.emoji) }
+        guard !isLoading else { return }
+        isLoading = true
+        defer { isLoading = false }
 
         do {
-            let all = try await service.takeTransaction(from: start, to: end)
-            let incomeMap = categories.reduce(into: [:]) { $0[$1.id] = $1.isIncome }
-            transactions = all.filter {
-                guard let dir = incomeMap[$0.categoryId] else { return false }
-                return direction == .income ? dir == .income : dir == .outcome
+            let cats = try await categoriesService.categories()
+            let emojis = Dictionary(uniqueKeysWithValues: cats.map { ($0.id, String($0.emoji)) })
+            let incomeMap = Dictionary(uniqueKeysWithValues:
+                cats.map { ($0.id, $0.isIncome == .income) }
+            )
+            self.emojiMap = emojis
+            let (start, end) = dateInterval(from: startDate, to: endDate)
+            let all = try await transactionsService.transactions(
+                from: start,
+                to: end
+            )
+            self.transactions = all.filter { tx in
+                guard let isInc = incomeMap[tx.categoryId] else { return false }
+                return direction == .income ? isInc : !isInc
             }
+
         } catch {
+            print("MyStoryViewModel.loadData error:", error)
         }
     }
 
@@ -78,6 +94,7 @@ final class MyStoryViewModel: ObservableObject {
         if normalized > endDate {
             endDate = normalized
         }
+        Task { await loadData() }
     }
 
     func updateEndDate(to newDate: Date) {
@@ -86,14 +103,19 @@ final class MyStoryViewModel: ObservableObject {
         if normalized < startDate {
             startDate = normalized
         }
+        Task { await loadData() }
     }
 
     private func dateInterval(from start: Date, to end: Date) -> (Date, Date) {
         let s = calendar.startOfDay(for: start)
         let eStart = calendar.startOfDay(for: end)
-        let e = calendar.date(byAdding: DateComponents(hour: 23, minute: 59, second: 59), to: eStart)!
+        let e = calendar.date(
+            byAdding: DateComponents(hour: 23, minute: 59, second: 59),
+            to: eStart
+        )!
         return (s, e)
     }
+
     func percentage(for tx: Transaction) -> Double {
         let total = NSDecimalNumber(decimal: totalSum).doubleValue
         guard total > 0 else { return 0 }
@@ -101,5 +123,3 @@ final class MyStoryViewModel: ObservableObject {
         return value / total
     }
 }
-
-

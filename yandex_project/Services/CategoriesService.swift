@@ -5,23 +5,50 @@
 //  Created by ulwww on 10.06.25.
 //
 
+import Foundation
+
 final class CategoriesService {
-    func categories() async throws -> [Category] {
-        [
-            Category(id: 1, name: "Зарплата", emoji: "💰", isIncome: Direction.income),
-            Category(id: 2, name: "Подарки", emoji: "🎁", isIncome: Direction.income),
-            Category(id: 3, name: "Еда", emoji: "🍔", isIncome: Direction.outcome),
-            Category(id: 4, name: "Развлечения", emoji: "🎬", isIncome: Direction.outcome),
-        ]
+    private let networkClient: NetworkClient
+    private var storage = StorageManager.shared.categories
+
+    public init(networkClient: NetworkClient) {
+        self.networkClient = networkClient
     }
     
-    func categories(direction: Direction) async throws -> [Category] {
-        let all = try await categories()
-        switch direction {
-        case .income:
-            return all.filter { $0.isIncome == Direction.income }
-        case .outcome:
-            return all.filter { $0.isIncome == Direction.outcome }
+    public func categories() async throws -> [Category] {
+        do {
+            let dtos: [CategoryDTO] = try await networkClient.request(method: .get, path: "categories")
+            let domains = dtos.map { $0.toDomain() }
+            try await storage.saveCategories(domains)
+            return domains
+        } catch {
+            do {
+                return try await storage.getAllCategories()
+            } catch {
+                throw ErrorService.notFoundCategories
+            }
+        }
+    }
+
+    public func categories(direction: Direction) async throws -> [Category] {
+        do {
+            let dtos: [CategoryDTO] = try await networkClient.request(
+                method: .get,
+                path: "categories/type/\(direction.rawValue)"
+            )
+            let domains = dtos.map { $0.toDomain() }
+            let allDtos: [CategoryDTO] = try await networkClient.request(method: .get, path: "categories")
+            let allDomains = allDtos.map { $0.toDomain() }
+            try await storage.saveCategories(allDomains)
+            return domains
+        } catch {
+            do {
+                return try await storage.getCategories(by: direction)
+            } catch {
+                throw ErrorService.notFoundCategories
+            }
         }
     }
 }
+
+

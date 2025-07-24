@@ -7,10 +7,20 @@
 import SwiftUI
 
 struct ArticlesView: View {
-    private let service = TransactionsService()
+    private let transactionsService: TransactionsService
+    private let categoriesService: CategoriesService
     @State private var categories: [Category] = []
     @State private var emojiMap: [Int: String] = [:]
     @State private var searchText: String = ""
+    
+    init() {
+        let client = NetworkClient(
+            baseURL: URL(string: "https://shmr-finance.ru/api/v1/")!,
+            token: "NAMSSUiLh9AGS534c5Rxlwww"
+        )
+        self.transactionsService = TransactionsService(networkClient: client)
+        self.categoriesService = CategoriesService(networkClient: client)
+    }
 
     private func partOfWord(_ query: String, _ text: String) -> Bool {
         var idx = text.lowercased().startIndex
@@ -49,7 +59,7 @@ struct ArticlesView: View {
                         prompt: "Search")
         }
         .task {
-            loadData()
+            await loadData()
         }
     }
 
@@ -95,10 +105,17 @@ struct ArticlesView: View {
         .padding(.vertical, 12)
     }
 
-    private func loadData() {
-        let c = service.categories
-        emojiMap = Dictionary(uniqueKeysWithValues: c.map { ($0.id, String($0.emoji)) })
-        categories = c
+    private func loadData() async {
+        do {
+            let fetched = try await categoriesService.categories()
+            await MainActor.run {
+                categories = fetched
+                emojiMap = Dictionary(uniqueKeysWithValues: fetched.map { ($0.id, String($0.emoji)) })
+            }
+        } catch {
+            print("Failed to load categories:", error)
+            return
+        }
     }
     
     private func levenshtein(_ s: String, _ t: String) -> Int {
