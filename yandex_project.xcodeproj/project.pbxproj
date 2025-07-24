@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		2C6599362E3266B5005001E1 /* Utilities in Frameworks */ = {isa = PBXBuildFile; productRef = 2C6599352E3266B5005001E1 /* Utilities */; };
 		2CCE70CF2E2CECDD007C822D /* Settings.bundle in Resources */ = {isa = PBXBuildFile; fileRef = 2CCE70CE2E2CECDD007C822D /* Settings.bundle */; };
 /* End PBXBuildFile section */
 
@@ -38,6 +39,7 @@
 		2C4DF0A22DFB8B8300A21E92 /* yandex_projectTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = yandex_projectTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		2C4DF0B22DFB8CEF00A21E92 /* yandex_projectTest.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = yandex_projectTest.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		2C4DF0D12DFB934200A21E92 /* yandex_projectTesting.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = yandex_projectTesting.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		2C6599342E32669D005001E1 /* Utilities */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = Utilities; sourceTree = "<group>"; };
 		2CCE70CE2E2CECDD007C822D /* Settings.bundle */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.plug-in"; path = Settings.bundle; sourceTree = "<group>"; };
 		2CEFAD2B2DF71FD7009BD3D5 /* yandex_project.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = yandex_project.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
@@ -102,6 +104,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				2C6599362E3266B5005001E1 /* Utilities in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -111,6 +114,7 @@
 		2CEFAD222DF71FD7009BD3D5 = {
 			isa = PBXGroup;
 			children = (
+				2C6599342E32669D005001E1 /* Utilities */,
 				2CCE70CE2E2CECDD007C822D /* Settings.bundle */,
 				2CEFAD2D2DF71FD7009BD3D5 /* yandex_project */,
 				2CEFAD2C2DF71FD7009BD3D5 /* Products */,
@@ -218,6 +222,7 @@
 			);
 			name = yandex_project;
 			packageProductDependencies = (
+				2C6599352E3266B5005001E1 /* Utilities */,
 			);
 			productName = yandex_project;
 			productReference = 2CEFAD2B2DF71FD7009BD3D5 /* yandex_project.app */;
@@ -260,6 +265,7 @@
 			mainGroup = 2CEFAD222DF71FD7009BD3D5;
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
+				2C6599372E327359005001E1 /* XCRemoteSwiftPackageReference "lottie-ios" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 2CEFAD2C2DF71FD7009BD3D5 /* Products */;
@@ -690,6 +696,24 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		2C6599372E327359005001E1 /* XCRemoteSwiftPackageReference "lottie-ios" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/airbnb/lottie-ios";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 4.5.2;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		2C6599352E3266B5005001E1 /* Utilities */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = Utilities;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 2CEFAD232DF71FD7009BD3D5 /* Project object */;
 }

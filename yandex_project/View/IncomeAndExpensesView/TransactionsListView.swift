@@ -45,7 +45,7 @@ struct TransactionsListView: View {
                 newButton
             }
             .background(Utility.Colors.background)
-            .fullScreenCover(isPresented: $isPresentingNew) {
+            .sheet(isPresented: $isPresentingNew) {
                 EditingOperationView(
                     direction: direction,
                     onSave: { newTx in transactions.append(newTx) },
@@ -53,7 +53,7 @@ struct TransactionsListView: View {
                 )
                 .ignoresSafeArea()
             }
-            .fullScreenCover(item: $editingTx) { tx in
+            .sheet(item: $editingTx) { tx in
                 EditingOperationView(
                     direction: direction,
                     transaction: tx,

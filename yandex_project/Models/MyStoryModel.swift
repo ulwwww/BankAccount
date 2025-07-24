@@ -5,6 +5,7 @@
 //  Created by ulwww on 24.06.25.
 //
 import SwiftUI
+import Utilities
 
 final class MyStoryViewModel: ObservableObject {
     @Published var transactions: [Transaction] = []
@@ -30,10 +31,9 @@ final class MyStoryViewModel: ObservableObject {
     private let transactionsService: TransactionsService
     private let categoriesService: CategoriesService
     private let calendar: Calendar
+    @Published var pieChartEntities: [PieChartEntity] = []
 
-    var totalSum: Decimal {
-        transactions.map(\.amount).reduce(0, +)
-    }
+    @Published var totalSum: Decimal = 0
 
     var sortedTransactions: [Transaction] {
         switch sortOption {
@@ -72,21 +72,38 @@ final class MyStoryViewModel: ObservableObject {
             let incomeMap = Dictionary(uniqueKeysWithValues:
                 cats.map { ($0.id, $0.isIncome == .income) }
             )
+            let names  = Dictionary(uniqueKeysWithValues: cats.map { ($0.id, $0.name) })
             self.emojiMap = emojis
+
             let (start, end) = dateInterval(from: startDate, to: endDate)
             let all = try await transactionsService.transactions(
                 from: start,
                 to: end
             )
-            self.transactions = all.filter { tx in
+
+            let filtered = all.filter { tx in
                 guard let isInc = incomeMap[tx.categoryId] else { return false }
                 return direction == .income ? isInc : !isInc
+            }
+            self.transactions = filtered
+            let sum = filtered.reduce(Decimal(0)) { acc, tx in acc + tx.amount }
+            self.totalSum = sum
+            let sumsByCategory = Dictionary(grouping: filtered, by: \.categoryId)
+                .mapValues { txs in txs.reduce(Decimal(0)) { $0 + $1.amount } }
+
+            self.pieChartEntities = sumsByCategory.map { (catId, value) in
+                let name = names[catId] ?? "Неизвестная категория"
+                return PieChartEntity(
+                    value: value,
+                    label: "\(name)"
+                )
             }
 
         } catch {
             print("MyStoryViewModel.loadData error:", error)
         }
     }
+
 
     func updateStartDate(to newDate: Date) {
         let normalized = calendar.startOfDay(for: newDate)
