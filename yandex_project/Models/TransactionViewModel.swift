@@ -8,7 +8,6 @@ import Foundation
 import SwiftUI
 import SwiftData
 
-
 final class TransactionsListViewModel: ObservableObject {
     @Published var isLoading = false
     @Published private(set) var allTransactions: [Transaction] = []

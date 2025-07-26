@@ -22,7 +22,7 @@ class AnalysisViewController: UIViewController {
     var onBack: (() -> Void)? = nil
     
     init(direction: Direction) {
-        self.viewModel = MyStoryViewModel(direction: direction, accountId: 1)
+        self.viewModel = MyStoryViewModel(direction: direction)
         super.init(nibName: nil, bundle: nil)
     }
 

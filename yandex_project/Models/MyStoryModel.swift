@@ -14,6 +14,7 @@ final class MyStoryViewModel: ObservableObject {
     @Published var isLoading = false
     @Published var startDate: Date
     @Published var endDate: Date
+    @Published var accountId: Int? = nil
 
     enum SortOption: CaseIterable, Identifiable {
         case date, amount
@@ -26,13 +27,11 @@ final class MyStoryViewModel: ObservableObject {
         }
     }
 
-    let direction: Direction
-    let accountId: Int
+    @Published var direction: Direction
     private let transactionsService: TransactionsService
     private let categoriesService: CategoriesService
     private let calendar: Calendar
     @Published var pieChartEntities: [PieChartEntity] = []
-
     @Published var totalSum: Decimal = 0
 
     var sortedTransactions: [Transaction] {
@@ -42,27 +41,40 @@ final class MyStoryViewModel: ObservableObject {
         }
     }
 
-    init(direction: Direction, accountId: Int, calendar: Calendar = .current) {
+    init(direction: Direction, calendar: Calendar = .current) {
         self.direction = direction
-        self.accountId = accountId
-        self.calendar  = calendar
+        self.calendar = calendar
         let now = Date()
         let monthAgo = calendar.date(byAdding: .month, value: -1, to: now)!
         self._startDate = Published(initialValue: calendar.startOfDay(for: monthAgo))
-        self._endDate   = Published(initialValue: calendar.startOfDay(for: now))
+        self._endDate = Published(initialValue: calendar.startOfDay(for: now))
+
         let client = NetworkClient(
             baseURL: URL(string: "https://shmr-finance.ru/api/v1/")!,
             token: "NAMSSUiLh9AGS534c5Rxlwww"
         )
         self.transactionsService = TransactionsService(networkClient: client)
         self.categoriesService = CategoriesService(networkClient: client)
+        Task {
+            await fetchAccountId()
+            await loadData()
+        }
+    }
 
-        Task { await loadData() }
+    @MainActor
+    private func fetchAccountId() async {
+        do {
+            let id = try await transactionsService.currentAccountId()
+            self.accountId = id
+        } catch {
+            print("Не удалось получить accountId:", error)
+        }
     }
 
     @MainActor
     func loadData() async {
         guard !isLoading else { return }
+        guard let id = accountId else { return }
         isLoading = true
         defer { isLoading = false }
 
@@ -72,20 +84,18 @@ final class MyStoryViewModel: ObservableObject {
             let incomeMap = Dictionary(uniqueKeysWithValues:
                 cats.map { ($0.id, $0.isIncome == .income) }
             )
-            let names  = Dictionary(uniqueKeysWithValues: cats.map { ($0.id, $0.name) })
+            let names = Dictionary(uniqueKeysWithValues: cats.map { ($0.id, $0.name) })
             self.emojiMap = emojis
 
             let (start, end) = dateInterval(from: startDate, to: endDate)
-            let all = try await transactionsService.transactions(
-                from: start,
-                to: end
-            )
+            let all = try await transactionsService.transactions(from: start, to: end)
 
             let filtered = all.filter { tx in
                 guard let isInc = incomeMap[tx.categoryId] else { return false }
                 return direction == .income ? isInc : !isInc
             }
             self.transactions = filtered
+
             let sum = filtered.reduce(Decimal(0)) { acc, tx in acc + tx.amount }
             self.totalSum = sum
             let sumsByCategory = Dictionary(grouping: filtered, by: \.categoryId)
@@ -93,17 +103,13 @@ final class MyStoryViewModel: ObservableObject {
 
             self.pieChartEntities = sumsByCategory.map { (catId, value) in
                 let name = names[catId] ?? "Неизвестная категория"
-                return PieChartEntity(
-                    value: value,
-                    label: "\(name)"
-                )
+                return PieChartEntity(value: value, label: "\(name)")
             }
 
         } catch {
             print("MyStoryViewModel.loadData error:", error)
         }
     }
-
 
     func updateStartDate(to newDate: Date) {
         let normalized = calendar.startOfDay(for: newDate)

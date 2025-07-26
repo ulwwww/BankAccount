@@ -7,16 +7,19 @@
 import SwiftUI
 import UIKit
 struct CheckView: View {
-    @StateObject var vm: TransactionsListViewModel
+    @StateObject var listVm: TransactionsListViewModel
+    @StateObject var storyVm: MyStoryViewModel
     @FocusState private var isBalanceFlag: Bool
     @State private var isEditing: Bool = false
     @State private var draftBalance: String
     @State private var flagViewCurrency: Bool = false
     @State private var hiddenBalance: Bool = false
+    @State private var choosenDirection: Bool = false
 
     init(vm: TransactionsListViewModel) {
-        _vm = StateObject(wrappedValue: vm)
+        _listVm = StateObject(wrappedValue: vm)
         _draftBalance = State(initialValue: vm.displayedBalance.description)
+        _storyVm = StateObject(wrappedValue: MyStoryViewModel(direction: .income))
     }
 
     var body: some View {
@@ -36,8 +39,8 @@ struct CheckView: View {
     private func currencySelectionDialog() -> some View {
         ForEach(CurrencyData.allCases) { curr in
             Button("\(curr.name) \(curr.symbol)") {
-                vm.currency = curr
-                draftBalance = vm.displayedBalance.description
+                listVm.currency = curr
+                draftBalance = listVm.displayedBalance.description
             }
             .tint(Utility.Colors.accent)
         }
@@ -51,12 +54,13 @@ struct CheckView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
                 balanceCurrencySection
+                BalanceChartView(vm: storyVm, isEditing: $isEditing)
                 Spacer()
             }
             .padding(.horizontal, 16)
         }
         .scrollDismissesKeyboard(.interactively)
-        .refreshable { await vm.loadData() }
+        .refreshable { await listVm.loadData() }
         .navigationTitle("Мой счет")
         .navigationBarBackButtonHidden(true)
         .toolbar {
@@ -91,7 +95,7 @@ struct CheckView: View {
                             draftBalance = balanceEditor(new)
                         }
                 } else {
-                    Text(vm.displayedBalance.description)
+                    Text(listVm.displayedBalance.description)
                         .foregroundStyle(.gray)
                         .spoiler(isOn: hiddenBalance)
                 }
@@ -104,7 +108,7 @@ struct CheckView: View {
             HStack(spacing: 8) {
                 Text("Валюта").font(.headline)
                 Spacer()
-                Text(vm.currency.symbol).foregroundStyle(.gray)
+                Text(listVm.currency.symbol).foregroundStyle(.gray)
                 if isEditing {
                     Image(systemName: Utility.Icons.chevron)
                         .foregroundStyle(.gray)
@@ -120,16 +124,17 @@ struct CheckView: View {
                 }
             }
         }
+        
     }
 
     private func toggleEdit() {
         if isEditing {
             if let newVal = Decimal(string: draftBalance) {
-                vm.applyManualBalance(newVal)
+                listVm.applyManualBalance(newVal)
             }
             isBalanceFlag = false
         } else {
-            draftBalance = vm.displayedBalance.description
+            draftBalance = listVm.displayedBalance.description
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
                 self.isBalanceFlag = true
             }
@@ -148,10 +153,4 @@ struct CheckView: View {
             return parts[0] + "." + parts[1]
         }
     }
-}
-
-
-#Preview {
-    let vm = TransactionsListViewModel()
-    CheckView(vm: vm)
 }
