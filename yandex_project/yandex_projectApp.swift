@@ -11,7 +11,7 @@ import SwiftUI
 struct yandex_projectApp: App {
     var body: some Scene {
         WindowGroup {
-            MainTabView()
+            SplashView()
         }
     }
 }

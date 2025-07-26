@@ -28,7 +28,8 @@ struct EditingOperationView: View {
     private let transactionsService: TransactionsService
     private let categoriesService: CategoriesService
     private let bankAccountsService: BankAccountsService
-
+    @State private var showNetworkError = false
+    @State private var networkErrorMessage = ""
     @State private var categories: [Category] = []
     @State private var selectedCategory: Category?
     @State private var amountText: String
@@ -236,16 +237,13 @@ struct EditingOperationView: View {
             print("error loading data: ", error)
         }
     }
-
+    
+    @MainActor
     private func saveOperation() async {
-        guard
-            let account = mainAccount,
-            let category = selectedCategory,
-            let amount = Decimal(string: amountText.replacingOccurrences(of: decimalSeparator, with: "."))
+        guard let account = mainAccount, let category = selectedCategory, let amount = Decimal(string: amountText.replacingOccurrences(of: decimalSeparator, with: "."))
         else {
             return
         }
-
         let now = Date()
         var tx = Transaction(
             id: originalTransaction?.id ?? UUID().hashValue,
@@ -264,22 +262,33 @@ struct EditingOperationView: View {
             } else {
                 tx = try await transactionsService.updateTransaction(tx)
             }
-            onSave(tx)
-            dismiss()
-        } catch {
-            print("error in transaction: ", error)
         }
+        catch HTTPError.httpError(let statusCode, _) where statusCode == 404 {
+            return
+        }
+        catch {
+            print("Error saving transaction:", error)
+            return
+        }
+        onSave(tx)
+        dismiss()
     }
-
+    
+    @MainActor
     private func deleteOperation() async {
         guard let tx = originalTransaction else { return }
         do {
             try await transactionsService.deleteTransaction(id: tx.id)
-            onDelete()
-            dismiss()
-        } catch {
-            print("error in delete transaction: ", error)
         }
+        catch HTTPError.httpError(let statusCode, _) where statusCode == 404 {
+        }
+        catch {
+            print("Error deleting transaction:", error)
+            return
+        }
+        
+        onDelete()
+        dismiss()
     }
 }
 

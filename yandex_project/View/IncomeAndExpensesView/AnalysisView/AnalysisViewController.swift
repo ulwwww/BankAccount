@@ -7,6 +7,7 @@
 
 import UIKit
 import Combine
+import Utilities
 
 private enum Section: Int, CaseIterable {
     case parameters, operations
@@ -17,10 +18,11 @@ class AnalysisViewController: UIViewController {
     private let tableView = UITableView(frame: .zero, style: .insetGrouped)
     private let navBar = UINavigationBar()
     private var cancellables = Set<AnyCancellable>()
+    let pie = PieChartView()
     var onBack: (() -> Void)? = nil
     
     init(direction: Direction) {
-        self.viewModel = MyStoryViewModel(direction: direction, accountId: 1)
+        self.viewModel = MyStoryViewModel(direction: direction)
         super.init(nibName: nil, bundle: nil)
     }
 
@@ -49,6 +51,7 @@ class AnalysisViewController: UIViewController {
         navBar.backgroundColor = .systemGray6 
         navBar.isTranslucent = false
         navBar.prefersLargeTitles = true
+        tableView.delegate = self
 
         let navItem = UINavigationItem(title: "Анализ")
         navItem.largeTitleDisplayMode = .always
@@ -83,14 +86,26 @@ class AnalysisViewController: UIViewController {
     }
 
     private func bindViewModel() {
-        Publishers.CombineLatest3(viewModel.$startDate, viewModel.$endDate, viewModel.$transactions)
-            .merge(with: viewModel.$sortOption.map { [self] _ in (viewModel.startDate, self.viewModel.endDate, self.viewModel.transactions) })
+        Publishers
+            .CombineLatest3(viewModel.$startDate, viewModel.$endDate, viewModel.$transactions)
+            .merge(with: viewModel.$sortOption
+                        .map { [self] _ in
+                            (viewModel.startDate, viewModel.endDate, viewModel.transactions)
+                        }
+            )
             .receive(on: RunLoop.main)
             .sink { [weak self] _, _, _ in
                 self?.reloadAll()
             }
             .store(in: &cancellables)
+        viewModel.$pieChartEntities
+            .receive(on: RunLoop.main)
+            .sink { [weak self] newEntities in
+                self?.pie.animateTransition(to: newEntities)
+            }
+            .store(in: &cancellables)
     }
+
 
     private func reloadAll() {
         tableView.reloadSections(IndexSet([Section.parameters.rawValue, Section.operations.rawValue]), with: .automatic)
@@ -188,14 +203,28 @@ extension AnalysisViewController: UITableViewDelegate {
         }
         return header
     }
+    
+    func tableView(_ tableView: UITableView, viewForFooterInSection section: Int) -> UIView? {
+        guard Section(rawValue: section) == .parameters else { return nil }
+        let container = UIView()
+        pie.translatesAutoresizingMaskIntoConstraints = false
+        container.addSubview(pie)
+        NSLayoutConstraint.activate([
+            pie.topAnchor.constraint(equalTo: container.topAnchor, constant: 8),
+            pie.leadingAnchor.constraint(equalTo: container.layoutMarginsGuide.leadingAnchor),
+            pie.trailingAnchor.constraint(equalTo: container.layoutMarginsGuide.trailingAnchor),
+            pie.heightAnchor.constraint(equalToConstant: 200)
+        ])
+        pie.entities = viewModel.pieChartEntities
+        return container
+    }
+    
+    func tableView(_ tableView: UITableView, heightForFooterInSection section: Int) -> CGFloat {
+        return Section(rawValue: section) == .parameters ? 216 : .leastNormalMagnitude
+    }
 
     func tableView(_ tv: UITableView, heightForHeaderInSection section: Int) -> CGFloat {
         Section(rawValue: section) == .operations ? 50 : .leastNormalMagnitude
     }
 
-    func tableView(_ tv: UITableView, heightForFooterInSection section: Int) -> CGFloat {
-        .leastNormalMagnitude
-    }
 }
-
-

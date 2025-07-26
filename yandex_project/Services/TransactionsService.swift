@@ -40,7 +40,7 @@ final class TransactionsService {
         self.networkClient = networkClient
     }
     
-    private func currentAccountId() async throws -> Int {
+    func currentAccountId() async throws -> Int {
         try await bankAccountService.currentIdAccount()
     }
 
